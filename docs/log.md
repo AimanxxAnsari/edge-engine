@@ -136,3 +136,14 @@ With no data every category has e = 0.5 and r = 1, so the choice is uniform. The
 **[DECISION] D-014: skippable questions.** `Question.skippable`; a skipped answer is stored as `null` with 0 points and `correct = NULL`, so it doesn't count in accuracy (accuracy is "right among attempted"). The adaptive weights do count skips as errors.
 
 **[DECISION] D-015: module options from the command line** with `-o key=value` (for example `-o mode=test -o categories=odds,percent`), so the CLI does not need flags for every module.
+
+**[WORK] Phase 1 built.** Package `src/edge_engine/modules/mental/`: `questions.py` (nine generators, `solve`, worked explanations, tips), `adaptive.py` (category weights), `module.py` (`MentalMaths`, modes sprint / test / practice). Core changes: `observe`, `summary` and `load_history` hooks (D-013); `Question.tip` and `Question.skippable` (D-014); `Rng.weighted_index`; the loop stops as soon as `observe` ends the game; CLI `-o key=value` (D-015) with option errors reported before a session is logged. 109 tests (49 new), all passing; ruff clean. New checks include:
+- `solve` against 16 hand-worked answers (including pot odds for half-pot and pot-sized bets).
+- 300 draws per category: whole positive answers for integer arithmetic, exact division, no trivial ×10 multiplications, short exact decimals, odds always "against" and in lowest terms.
+- Adaptive weights: uniform with no data; slow + wrong > no data > fast + right; time and errors each raise the weight; the floor holds; sampling matches the probabilities (chi-square); history is capped at 50 answers.
+- A simulated player who is slow and wrong on fractions sees fractions rise from about a third to over 60% of questions.
+- Modes: a sprint at 2 s per answer gives exactly 60 questions; a late answer is logged but not counted; test mode scores +1/−1/0 and stops at 80; practice ignores time.
+
+*Changes made after trying it:* multiples of 10 dropped from ×1-digit questions (30 × 7 is too easy); odds questions are always "against" and reduced (no "2 to 4 against"); repeating percentages shown as "≈ 66.67" instead of "200/3"; estimation explanations rewritten as "round, then adjust", since rounding both numbers was often more than 2% off (730 × 60 against 39,930).
+
+*Left for later:* history is all-time (capped), not weighted by date; difficulty within a category is fixed. Both can be added without changing the contract.

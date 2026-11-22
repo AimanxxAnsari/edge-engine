@@ -47,6 +47,16 @@ Status (22 Nov 2026): **done.**
 
 **Done when:** both modes are playable, stats are logged per category, and adaptive sampling is tested.
 
+Status (22 Nov 2026): **done** (branch `phase-1-mental-maths`).
+- [x] Design entry in docs/log.md
+- [x] Engine + tests
+- [x] Trainer (questions / truth / explain)
+- [x] Terminal interface
+- [x] docs/ explainer (`docs/phase-1-mental-maths.md`)
+- [x] Pushed (local-brain check passed)
+- [x] Teaching PDF in local-brain/pdfs/
+- [x] Work-log entry in docs/log.md
+
 ## Phase 2 — Coin Flip with an Edge (Kelly)
 
 - Classic Haghani–Dewey setup ($25, p = 0.6, cap optional).
