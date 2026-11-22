@@ -195,3 +195,15 @@ Money is kept in whole cents (integers), so no rounding drift builds up over 300
 **[DECISION] D-019: still no numpy.** 1,000 runs × 300 flips in pure Python takes well under a second, and the RNG has to be our own anyway.
 
 **[DECISION] D-020: `observe` also receives the answer:** `observe(state, question, answer, score, seconds)`. This changes D-013. *Why:* the bet is the answer, and the module has to know the amount to settle it. The mental maths module only needed the score, so it simply ignores the new argument.
+
+**[WORK] Phase 2 built.** Package `src/edge_engine/modules/kelly/`: `kmath.py` (Kelly fraction, g(f), zero-growth root, exact mean / median / P(below) from the binomial, drawdown approximation, gambler's ruin, Beta posterior and sampler), `sim.py` (paths, drawdown and fixed-bet ruin frequencies with SE, quantiles, text fan chart), `module.py` (`CoinFlip`, classic and unknown modes), `lab.py` (`edge-engine lab kelly`). Core and CLI: `observe` gets the answer (D-020); numeric answer ranges and `%`-of-bankroll input (D-017); dollar display; `lab` command (D-018); the summary now prints before the final "Session finished" line. 135 tests (26 new), all passing in under 2 s; ruff clean.
+
+The "Done when" checks:
+- f* = 0.2; g(0.1) = 0.0150, g(0.2) = 0.0201 and g(0.4) ≈ −0.0025 as in the research notes. The exact value of the last is −0.002447, so the notes round it up; the test allows ±0.00006 and also checks the formula itself.
+- Simulation against exact: mean log growth per flip at f = 0.1, 0.2, 0.4 (within 4 SE of g); P(finish below start) at f = 0.3; mean final wealth at f = 0.1; fixed $5 bets against (q/p)⁵.
+
+Other checks: mean, median and P(below) against brute force over all 2¹⁰ flip sequences; the Beta sampler's mean and variance; a perfect player's bankroll equals the Kelly shadow's to the cent; bets settle correctly on heads and tails; the cap ends the game and limits the Kelly bet; going all-in and losing ends the game; in unknown mode the estimate question comes every 10 flips and a perfect player matches Bayes-Kelly; a seed replays the session exactly.
+
+*Changes made after trying it:* means of millions and billions are shown as `$3.22M` so the lab table fits; the fan chart's axis labels are aligned and the start row is labelled; the bet prompt shows a dollar hint instead of the probability hint; the summary's "Kelly growth" now uses the favoured side when the coin favours tails (it showed −0.24).
+
+*Left for later:* the exact capped optimum (dynamic programming), variable-odds and multiple-bet modes.

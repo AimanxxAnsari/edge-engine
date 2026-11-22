@@ -66,6 +66,16 @@ Status (22 Nov 2026): **done** (branch `phase-1-mental-maths`).
 
 **Done when:** the tests reproduce f* = 0.2 and g(0.1), g(0.2), g(0.4) from the research notes, and the simulations agree with the exact values within standard error.
 
+Status (22 Nov 2026): **done** (branch `phase-2-kelly`).
+- [x] Design entry in docs/log.md
+- [x] Engine + tests
+- [x] Trainer (questions / truth / explain)
+- [x] Terminal interface
+- [x] docs/ explainer (`docs/phase-2-kelly.md`)
+- [x] Pushed (local-brain check passed)
+- [x] Teaching PDF in local-brain/pdfs/
+- [x] Work-log entry in docs/log.md
+
 ## Phase 3 — Blackjack
 
 - Shoe, rules config (decks, S17/H17, 3:2 vs 6:5, DAS, surrender, penetration).
