@@ -1,0 +1,140 @@
+"""Terminal front end: answer parsing, prompting and the reveal."""
+
+from __future__ import annotations
+
+import re
+import time
+from collections.abc import Callable
+from fractions import Fraction
+from typing import Any
+
+from .core import Kind, Question
+from .loop import Quit, Turn
+
+QUIT_WORDS = {"q", "quit", "exit"}
+
+HINTS = {
+    Kind.POINT: "a number: 0.25, 1/4 or 25%",
+    Kind.SPEED: "a number",
+    Kind.PROBABILITY: "a probability: 0.25, 1/4 or 25%",
+    Kind.INTERVAL: "two numbers: low high",
+}
+
+
+class ParseError(ValueError):
+    pass
+
+
+def parse_number(text: str) -> float:
+    """Accept '0.25', '1/4', '25%', '-3', '1e3'."""
+    s = text.strip().replace(",", "")
+    if not s:
+        raise ParseError("empty answer")
+    try:
+        if s.endswith("%"):
+            return float(s[:-1]) / 100.0
+        if "/" in s:
+            num, den = s.split("/", 1)
+            return float(Fraction(int(num), int(den)))
+        return float(s)
+    except (ValueError, ZeroDivisionError):
+        raise ParseError(f"not a number: {text!r}") from None
+
+
+def parse_answer(question: Question, text: str) -> Any:
+    kind = question.kind
+    if kind is Kind.DECISION:
+        s = text.strip().lower()
+        choices = [c.lower() for c in question.choices]
+        if s.isdigit() and 1 <= int(s) <= len(choices):
+            return question.choices[int(s) - 1]
+        pairs = zip(question.choices, choices, strict=True)
+        matches = [c for c, low in pairs if s and low.startswith(s)]
+        if len(matches) == 1:
+            return matches[0]
+        raise ParseError(f"choose one of: {', '.join(question.choices)}")
+    if kind is Kind.INTERVAL:
+        parts = [p for p in re.split(r"[\s;]+|\bto\b", text.strip()) if p]
+        if len(parts) != 2:
+            raise ParseError("give two numbers: low high")
+        lo, hi = parse_number(parts[0]), parse_number(parts[1])
+        if hi < lo:
+            raise ParseError("the low end must not be above the high end")
+        return (lo, hi)
+    value = parse_number(text)
+    if kind is Kind.PROBABILITY and not 0.0 <= value <= 1.0:
+        raise ParseError("a probability must be between 0 and 1")
+    return value
+
+
+def _fmt(x: float) -> str:
+    return str(int(x)) if float(x).is_integer() else f"{x:.4f}"
+
+
+def format_truth(question: Question, truth: Any) -> str:
+    kind = question.kind
+    if kind is Kind.DECISION:
+        best = max(truth, key=truth.get)
+        evs = ", ".join(f"{c} {v:+.4f}" for c, v in truth.items())
+        return f"{best}  (EV: {evs})"
+    if kind is Kind.PROBABILITY:
+        return "it happened (1)" if truth else "it did not happen (0)"
+    return _fmt(float(truth))
+
+
+def format_answer(question: Question, answer: Any) -> str:
+    if question.kind is Kind.INTERVAL:
+        lo, hi = answer
+        return f"[{_fmt(lo)}, {_fmt(hi)}]"
+    if question.kind is Kind.DECISION:
+        return str(answer)
+    return _fmt(float(answer))
+
+
+class TerminalUI:
+    """Reads answers and prints reveals. input/output/clock are injectable for tests."""
+
+    def __init__(
+        self,
+        input_fn: Callable[[str], str] | None = None,
+        output_fn: Callable[[str], None] | None = None,
+        clock: Callable[[], float] = time.perf_counter,
+    ) -> None:
+        # Look up input/print at call time, so they can be swapped (e.g. in tests).
+        self.input = input_fn or (lambda prompt: input(prompt))
+        self.out = output_fn or (lambda text: print(text))
+        self.clock = clock
+
+    def show(self, text: str) -> None:
+        self.out("")
+        self.out(text)
+
+    def ask(self, question: Question) -> tuple[Any, float]:
+        hint = HINTS.get(question.kind)
+        if question.kind is Kind.DECISION:
+            hint = " / ".join(question.choices)
+        self.out("")
+        self.out(f"[{question.kind.value}] {question.prompt}")
+        if hint:
+            self.out(f"  ({hint}; q to quit)")
+        start = self.clock()
+        while True:
+            try:
+                text = self.input("> ")
+            except EOFError:
+                raise Quit() from None
+            if text.strip().lower() in QUIT_WORDS:
+                raise Quit()
+            try:
+                answer = parse_answer(question, text)
+            except ParseError as e:
+                self.out(f"  {e}")
+                continue
+            return answer, self.clock() - start
+
+    def reveal(self, turn: Turn) -> None:
+        q, s = turn.question, turn.score
+        mark = {True: "correct", False: "wrong", None: "scored"}[s.correct]
+        self.out(f"  you: {format_answer(q, turn.answer)} | truth: {format_truth(q, turn.truth)}")
+        self.out(f"  {mark} | error {s.error:.4f} | points {s.points:.2f} | {turn.seconds:.1f}s")
+        self.out(f"  {turn.explanation}")

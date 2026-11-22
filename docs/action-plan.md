@@ -28,6 +28,16 @@ Not a game, but every game depends on it.
 
 **Done when:** a dummy module runs through the whole predict → reveal → score → log loop, and the RNG and probability tests pass.
 
+Status (22 Nov 2026): **done.**
+- [x] Design entry in docs/log.md
+- [x] Engine + tests
+- [x] Trainer (questions / truth / explain), via the dice demo
+- [x] Terminal interface
+- [x] docs/ explainer (`docs/phase-0-foundations.md`)
+- [x] Pushed (local-brain check passed)
+- [x] Teaching PDF in local-brain/pdfs/
+- [x] Work-log entry in docs/log.md
+
 ## Phase 1 — Mental Maths Speed
 
 - Question generators: + − × ÷, fractions/percentages, decimals, estimation, odds conversion.

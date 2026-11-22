@@ -15,7 +15,7 @@ No real money is involved.
 Game state → you are asked a question → you answer (timed)
            → the truth function computes the real value
            → reveal: your answer vs the truth, with a short explanation
-           → score + log → progress dashboard
+           → score + log → per-category stats
 ```
 
 Questions can be point estimates ("what is your equity?"), decisions ("hit or stand?"), probability forecasts (scored with the Brier score), intervals ("give a 90% range") or speed drills.
@@ -24,9 +24,9 @@ Questions can be point estimates ("what is your equity?"), decisions ("hit or st
 
 ## Games
 
-| Phase | Game | Main skills | Status |
+| Phase | Module | Main skills | Status |
 |---|---|---|---|
-| 0 | Foundations | Architecture, seeded RNG, scoring | Planned |
+| 0 | Foundations (+ dice demo) | Seeded RNG, probability, scoring, logging | Done |
 | 1 | Mental Maths Speed | Arithmetic speed and accuracy | Planned |
 | 2 | Coin Flip with an Edge | Bet sizing, Kelly criterion, risk of ruin | Planned |
 | 3 | Blackjack | Conditional probability, card counting | Planned |
@@ -35,32 +35,68 @@ Questions can be point estimates ("what is your equity?"), decisions ("hit or st
 | 6 | Backgammon | Dice probability, the doubling cube | Planned |
 | 7 | Chess | Search, evaluation, calculation | Planned |
 
-### 1. Mental Maths Speed
-Timed arithmetic sprints in the style of trading-firm tests: two-minute sprints, an 80-questions-in-8-minutes simulator with penalties for wrong answers, and drills on fractions, percentages and odds conversion. Difficulty adapts to the question types that slow you down the most.
+### Phase 1 — Mental Maths Speed
+Timed arithmetic sprints in the style of trading-firm tests: two-minute sprints, an 80-questions-in-8-minutes simulator with penalties for wrong answers, and drills on fractions, percentages and odds conversion. Difficulty adapts to the question types you are slowest on or get wrong most often.
 
-### 2. Coin Flip with an Edge
+### Phase 2 — Coin Flip with an Edge
 A biased coin (for example 60% heads) and a bankroll. You have an edge, but betting too much still loses money over time. Your bankroll is compared with Kelly and half-Kelly betting on the *same* flips, and there is a mode where you have to estimate the coin's bias as you play.
 
-### 3. Blackjack
+### Phase 3 — Blackjack
 Configurable rules (number of decks, S17/H17, 3:2 or 6:5 payouts) and basic strategy computed from exact expected values. Includes a Hi-Lo counting trainer with running and true count, count-based strategy changes, and a review of how much EV each mistake cost.
 
-### 4. Market Making
+### Phase 4 — Market Making
 "Make me a market" on dice sums and hidden cards. You quote a bid and an ask, bots trade against you, information comes out one piece at a time and you re-quote. Some bots know more than you do. You learn fair value, spread width, skewing your inventory and adverse selection.
 
-### 5. Poker
+### Phase 5 — Poker
 Moves from Kuhn poker (3 cards, fully solved) to Leduc Hold'em to heads-up Hold'em. A from-scratch CFR solver finds the optimal mixed strategies, and the trainer drills outs, equity, pot odds, minimum defence frequency and thinking in ranges.
 
-### 6. Backgammon
+### Phase 6 — Backgammon
 A full rules engine, shot counting (how many of the 36 rolls hit a blot), pip-count drills and the doubling cube: when to double and when to take. A heuristic bot comes first, then a self-trained evaluator.
 
-### 7. Chess
+### Phase 7 — Chess
 A from-scratch engine with move generation, alpha-beta search and position evaluation, plus a game-review mode that converts evaluations to win% and rates each move. No hidden information or dice, so it covers calculation and evaluation.
 
 ---
 
+## Getting started
+
+Requires Python 3.10 or later. No runtime dependencies yet.
+
+```
+git clone https://github.com/AimanxxAnsari/edge-engine.git
+cd edge-engine
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+git config core.hooksPath githooks
+```
+
+```
+edge-engine list                         # available modules
+edge-engine play dice --seed 7           # play; the same seed replays the same session
+edge-engine stats                        # per-category results, slowest first
+pytest                                   # run the tests
+```
+
+Answers can be typed as `0.25`, `1/4` or `25%`. Type `q` to stop. History is saved to `~/.edge_engine/history.db` (change it with `--db`, or turn it off with `--no-log`).
+
+## Project layout
+
+```
+src/edge_engine/
+  rng.py        seeded xoshiro256** generator
+  prob.py       n-choose-k, binomial, hypergeometric, Monte Carlo with standard error
+  scoring.py    Brier score, interval score, EV lost, speed score
+  core.py       question kinds and the module contract
+  loop.py       predict → reveal → score → log
+  storage.py    SQLite history
+  terminal.py   terminal front end
+  modules/      one file (or package) per game
+docs/           plan, log and a maths explainer per phase
+```
+
 ## Status
 
-Early development. Games run in the terminal first. Each game is built end to end (engine, trainer, tests, docs) before the next one starts.
+Phase 0 (foundations) is done; a small dice demo uses every part of it. Next is Phase 1, Mental Maths Speed. Games run in the terminal first. Each game is built end to end (engine, trainer, tests, docs) before the next one starts. The maths behind each phase is explained in `docs/`, starting with [Phase 0](docs/phase-0-foundations.md).
 
 ## Licence
 

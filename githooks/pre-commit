@@ -1,0 +1,6 @@
+#!/bin/sh
+# Block any commit that contains local-brain/ (private, never pushed)
+if git diff --cached --name-only | grep -q '^local-brain/'; then
+  echo "BLOCKED: local-brain/ must never be committed. Unstage it: git reset -q -- local-brain" >&2
+  exit 1
+fi
