@@ -34,6 +34,7 @@ class SessionResult:
     turns: list[Turn] = field(default_factory=list)
     result: float = 0.0
     completed: bool = True
+    summary: str = ""
 
     @property
     def points(self) -> float:
@@ -66,6 +67,7 @@ def run_session(
 
     At each state: show the description, ask every question, score and reveal the
     immediate ones, take an action, then score the forecasts against the new state.
+    After every scored answer the module's observe() may update the state.
     """
     config = dict(config or {})
     act = act or _only_action
@@ -74,7 +76,8 @@ def run_session(
     session_id = store.start_session(module.name, seed, config) if store else None
     out = SessionResult(module=module.name, seed=seed, session_id=session_id)
 
-    def finish(q: Question, answer: Any, seconds: float, at_state: Any) -> None:
+    def finish(q: Question, answer: Any, seconds: float, at_state: Any) -> Any:
+        """Score, log and reveal one answer; return the state after module.observe."""
         truth = module.truth(at_state, q)
         score = score_answer(q, answer, truth, seconds)
         turn = Turn(q, answer, truth, seconds, score, module.explain(at_state, q))
@@ -83,6 +86,7 @@ def run_session(
             store.log_answer(session_id, q, answer, truth, score, seconds)
         if reveal is not None:
             reveal(turn)
+        return module.observe(at_state, q, score, seconds)
 
     try:
         while not module.is_terminal(state):
@@ -96,14 +100,17 @@ def run_session(
                 if q.kind is Kind.PROBABILITY:
                     pending.append((q, answer, seconds))
                 else:
-                    finish(q, answer, seconds, state)
+                    state = finish(q, answer, seconds, state)
+            if module.is_terminal(state):  # observe() may end the game (e.g. time is up)
+                break
             state = module.apply(state, act(state, module.legal_actions(state)))
             for q, answer, seconds in pending:
-                finish(q, answer, seconds, state)
+                state = finish(q, answer, seconds, state)
     except Quit:
         out.completed = False  # forecasts still pending are dropped, unscored
     finally:
         if store is not None and session_id is not None:
             store.end_session(session_id)
     out.result = module.result(state)
+    out.summary = module.summary(state)
     return out

@@ -6,9 +6,11 @@ import argparse
 import time
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 from .loop import run_session
 from .modules import REGISTRY, get_module
+from .rng import Rng
 from .storage import DEFAULT_DB, Store
 from .terminal import TerminalUI
 
@@ -19,16 +21,42 @@ def _cmd_list(args: argparse.Namespace) -> int:
     return 0
 
 
+def parse_option(text: str) -> tuple[str, Any]:
+    """'key=value' -> (key, value). Values: int, float, true/false, or a string."""
+    key, sep, raw = text.partition("=")
+    if not sep or not key.strip():
+        raise argparse.ArgumentTypeError(f"expected key=value, got {text!r}")
+    raw = raw.strip()
+    value: Any = raw
+    if raw.lower() in ("true", "false"):
+        value = raw.lower() == "true"
+    else:
+        for cast in (int, float):
+            try:
+                value = cast(raw)
+                break
+            except ValueError:
+                pass
+    return key.strip(), value
+
+
 def _cmd_play(args: argparse.Namespace) -> int:
     module = get_module(args.module)
     seed = args.seed if args.seed is not None else time.time_ns() % (1 << 32)
-    config = {}
+    config: dict[str, Any] = dict(args.option or [])
     if args.rounds is not None:
         config["rounds"] = args.rounds
     ui = TerminalUI()
     print(f"{module.title}  (seed {seed}; replay with --seed {seed})")
     store = None if args.no_log else Store(args.db)
     try:
+        if store is not None:
+            module.load_history(store.category_stats(module.name))
+        try:
+            module.init(Rng(seed), config)  # check the options before a session is logged
+        except ValueError as e:
+            print(f"error: {e}")
+            return 2
         res = run_session(
             module, seed, ask=ui.ask, config=config, reveal=ui.reveal, show=ui.show, store=store
         )
@@ -38,6 +66,8 @@ def _cmd_play(args: argparse.Namespace) -> int:
     n = len(res.turns)
     status = "finished" if res.completed else "stopped early"
     print(f"\nSession {status}: {n} answers, {res.points:.2f} points out of {n}.")
+    if res.summary:
+        print(res.summary)
     return 0
 
 
@@ -69,7 +99,15 @@ def build_parser() -> argparse.ArgumentParser:
     play = sub.add_parser("play", help="play a module")
     play.add_argument("module", choices=sorted(REGISTRY))
     play.add_argument("--seed", type=int, help="seed for a replayable session")
-    play.add_argument("--rounds", type=int, help="number of rounds")
+    play.add_argument("--rounds", type=int, help="number of rounds (dice)")
+    play.add_argument(
+        "-o",
+        "--option",
+        action="append",
+        type=parse_option,
+        metavar="KEY=VALUE",
+        help="module option, e.g. -o mode=test -o categories=odds,percent",
+    )
     play.add_argument("--db", default=DEFAULT_DB, help=f"history file (default {DEFAULT_DB})")
     play.add_argument("--no-log", action="store_true", help="do not save answers")
     play.set_defaults(func=_cmd_play)

@@ -86,3 +86,64 @@ Forecast questions are about something that has not happened yet, so the loop sc
 Other work: CI on GitHub Actions (Python 3.10–3.12, ruff + pytest); git hooks moved to tracked `githooks/` (tested in a throwaway repo: a commit with `local-brain/` is blocked); README updated (Getting started, layout, status, "Phase N" headings, "per-category stats" instead of "dashboard"); maths explainer `docs/phase-0-foundations.md`; private teaching PDF written.
 
 *Bug found on the way:* `TerminalUI(input_fn=input)` bound `input` when the function was defined, so tests that patch `builtins.input` had no effect. It now looks `input`/`print` up at call time.
+
+---
+
+## 2026-11-22 — Phase 1: Mental Maths Speed
+
+**[DECISION] D-012: one branch per phase, merged by pull request.** *Why:* CI runs before anything reaches `main`, each phase is one reviewable unit in the history, and a dead-end approach can be dropped by deleting the branch. No `develop`/`release` branches: that is team overhead.
+
+**[DESIGN] Phase 1 design.**
+
+*Categories and the truth function.* Nine categories: add, sub, mul, div, decimals, fractions, percent, estimation, odds. A generator draws the operands with the seeded RNG and stores them in `Question.params` (operands as strings such as `"0.3"` or `"3/4"`). A separate `solve(params)` computes the exact answer with `Fraction`. Generation and truth are separate functions, so the truth can be tested on its own.
+
+| Category | Example | Target time | Tolerance |
+|---|---|---|---|
+| add | 347 + 486 | 5 s | exact |
+| sub | 503 − 278 | 6 s | exact |
+| mul | 47 × 8, 14 × 37 | 8 s | exact |
+| div | 672 ÷ 8 | 8 s | exact |
+| decimals | 0.3 × 0.7, 4.8 ÷ 0.6 | 10 s | exact |
+| fractions | 3/4 + 1/6 | 15 s | 0.005 (so 3-decimal answers count) |
+| percent | 15% of 240; 18 is what % of 72; change from 80 to 100 | 10 s | exact |
+| estimation | 347 × 62, 8 214 ÷ 37 | 12 s | 2% of the answer |
+| odds | 3 to 1 against → %; 20% → odds against; pot odds | 12 s | 0.5 percentage points (0.05 for odds) |
+
+Percent answers are typed as plain numbers: for a percent question `25` and `25%` both mean 25.
+
+*Modes.*
+- **sprint**: 120 s, as many as you can, +1 per correct answer.
+- **test**: 80 questions in 480 s, +1 correct, −1 wrong, 0 skipped (`s` skips).
+- **practice**: 20 questions, no clock.
+
+*The clock counts answering time only* (the sum of the time spent on each question). Reading the reveal and tips does not use up the clock. An answer that finishes after time has run out is logged (it is still practice data) but does not count towards the mode score.
+
+*Adaptive sampling.* For each category c, with n answers, w wrong or skipped, and total time s against target T:
+
+```
+error rate  e = (w + 1) / (n + 2)            (Laplace smoothing)
+time ratio  r = ((s + 2T) / (n + 2)) / T     (prior: two answers at the target time)
+weight      raw = r · e
+probability p = 0.75 · raw / Σ raw + 0.25 / C
+```
+
+With no data every category has e = 0.5 and r = 1, so the choice is uniform. The 25% uniform floor keeps every category in play. History from earlier sessions is loaded from SQLite and capped at the equivalent of 50 answers per category, so old results don't swamp new ones. Adaptive sampling can be turned off with `adaptive=false`.
+
+*Tips.* Each question carries a general technique tip, shown only when the answer was wrong, skipped or slower than the target. The explanation (always shown) is a worked solution for those exact numbers.
+
+**[DECISION] D-013: three small additions to the module contract.** `observe(state, question, score, seconds) → state` is called after each answer is scored, so a module can react to answers (clock, adaptive stats). `summary(state) → str` is printed at the end. `load_history(stats)` gives a module the logged per-category stats before a session. All three have no-op defaults, so the dice demo is unchanged. *Why:* the clock and adaptive sampling both need to see answers, and this is the smallest change that allows it without the module reading the terminal or the database itself.
+
+**[DECISION] D-014: skippable questions.** `Question.skippable`; a skipped answer is stored as `null` with 0 points and `correct = NULL`, so it doesn't count in accuracy (accuracy is "right among attempted"). The adaptive weights do count skips as errors.
+
+**[DECISION] D-015: module options from the command line** with `-o key=value` (for example `-o mode=test -o categories=odds,percent`), so the CLI does not need flags for every module.
+
+**[WORK] Phase 1 built.** Package `src/edge_engine/modules/mental/`: `questions.py` (nine generators, `solve`, worked explanations, tips), `adaptive.py` (category weights), `module.py` (`MentalMaths`, modes sprint / test / practice). Core changes: `observe`, `summary` and `load_history` hooks (D-013); `Question.tip` and `Question.skippable` (D-014); `Rng.weighted_index`; the loop stops as soon as `observe` ends the game; CLI `-o key=value` (D-015) with option errors reported before a session is logged. 109 tests (49 new), all passing; ruff clean. New checks include:
+- `solve` against 16 hand-worked answers (including pot odds for half-pot and pot-sized bets).
+- 300 draws per category: whole positive answers for integer arithmetic, exact division, no trivial ×10 multiplications, short exact decimals, odds always "against" and in lowest terms.
+- Adaptive weights: uniform with no data; slow + wrong > no data > fast + right; time and errors each raise the weight; the floor holds; sampling matches the probabilities (chi-square); history is capped at 50 answers.
+- A simulated player who is slow and wrong on fractions sees fractions rise from about a third to over 60% of questions.
+- Modes: a sprint at 2 s per answer gives exactly 60 questions; a late answer is logged but not counted; test mode scores +1/−1/0 and stops at 80; practice ignores time.
+
+*Changes made after trying it:* multiples of 10 dropped from ×1-digit questions (30 × 7 is too easy); odds questions are always "against" and reduced (no "2 to 4 against"); repeating percentages shown as "≈ 66.67" instead of "200/3"; estimation explanations rewritten as "round, then adjust", since rounding both numbers was often more than 2% off (730 × 60 against 39,930).
+
+*Left for later:* history is all-time (capped), not weighted by date; difficulty within a category is fixed. Both can be added without changing the contract.

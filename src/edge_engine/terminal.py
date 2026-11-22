@@ -12,6 +12,7 @@ from .core import Kind, Question
 from .loop import Quit, Turn
 
 QUIT_WORDS = {"q", "quit", "exit"}
+SKIP_WORDS = {"s", "skip"}
 
 HINTS = {
     Kind.POINT: "a number: 0.25, 1/4 or 25%",
@@ -27,7 +28,7 @@ class ParseError(ValueError):
 
 def parse_number(text: str) -> float:
     """Accept '0.25', '1/4', '25%', '-3', '1e3'."""
-    s = text.strip().replace(",", "")
+    s = text.strip().replace(",", "").replace("−", "-")
     if not s:
         raise ParseError("empty answer")
     try:
@@ -42,6 +43,11 @@ def parse_number(text: str) -> float:
 
 
 def parse_answer(question: Question, text: str) -> Any:
+    """Parse typed text for this question. Returns None for a skip."""
+    if question.skippable and text.strip().lower() in SKIP_WORDS:
+        return None
+    if question.params.get("unit") == "percent":  # '25' and '25%' both mean 25
+        return parse_number(text.strip().removesuffix("%"))
     kind = question.kind
     if kind is Kind.DECISION:
         s = text.strip().lower()
@@ -83,12 +89,20 @@ def format_truth(question: Question, truth: Any) -> str:
 
 
 def format_answer(question: Question, answer: Any) -> str:
+    if answer is None:
+        return "skipped"
     if question.kind is Kind.INTERVAL:
         lo, hi = answer
         return f"[{_fmt(lo)}, {_fmt(hi)}]"
     if question.kind is Kind.DECISION:
         return str(answer)
     return _fmt(float(answer))
+
+
+def show_tip(turn: Turn) -> bool:
+    """Tips are shown after a wrong, skipped or slower-than-target answer."""
+    target = turn.question.target_seconds
+    return turn.score.correct is not True or (target is not None and turn.seconds > target)
 
 
 class TerminalUI:
@@ -113,10 +127,13 @@ class TerminalUI:
         hint = HINTS.get(question.kind)
         if question.kind is Kind.DECISION:
             hint = " / ".join(question.choices)
+        if question.params.get("unit") == "percent":
+            hint = "a number, in %"
+        extras = "s to skip, q to quit" if question.skippable else "q to quit"
         self.out("")
         self.out(f"[{question.kind.value}] {question.prompt}")
         if hint:
-            self.out(f"  ({hint}; q to quit)")
+            self.out(f"  ({hint}; {extras})")
         start = self.clock()
         while True:
             try:
@@ -134,7 +151,12 @@ class TerminalUI:
 
     def reveal(self, turn: Turn) -> None:
         q, s = turn.question, turn.score
-        mark = {True: "correct", False: "wrong", None: "scored"}[s.correct]
+        if turn.answer is None:
+            mark = "skipped"
+        else:
+            mark = {True: "correct", False: "wrong", None: "scored"}[s.correct]
         self.out(f"  you: {format_answer(q, turn.answer)} | truth: {format_truth(q, turn.truth)}")
         self.out(f"  {mark} | error {s.error:.4f} | points {s.points:.2f} | {turn.seconds:.1f}s")
         self.out(f"  {turn.explanation}")
+        if q.tip and show_tip(turn):
+            self.out(f"  tip: {q.tip}")

@@ -84,6 +84,10 @@ class Score:
 
 def score_answer(question: Question, answer: Any, truth: Any, seconds: float) -> Score:
     """Score one answer according to the question's kind (see docs/log.md, Phase 0 design)."""
+    if answer is None:  # skipped
+        if not question.skippable:
+            raise ValueError("this question cannot be skipped")
+        return Score(0.0, 0.0, None)
     kind = question.kind
     if kind is Kind.POINT:
         err = absolute_error(float(answer), float(truth))

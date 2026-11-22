@@ -27,7 +27,7 @@ Questions can be point estimates ("what is your equity?"), decisions ("hit or st
 | Phase | Module | Main skills | Status |
 |---|---|---|---|
 | 0 | Foundations (+ dice demo) | Seeded RNG, probability, scoring, logging | Done |
-| 1 | Mental Maths Speed | Arithmetic speed and accuracy | Planned |
+| 1 | Mental Maths Speed | Arithmetic speed and accuracy | Done |
 | 2 | Coin Flip with an Edge | Bet sizing, Kelly criterion, risk of ruin | Planned |
 | 3 | Blackjack | Conditional probability, card counting | Planned |
 | 4 | Market Making | Pricing, spreads, adverse selection | Planned |
@@ -36,7 +36,13 @@ Questions can be point estimates ("what is your equity?"), decisions ("hit or st
 | 7 | Chess | Search, evaluation, calculation | Planned |
 
 ### Phase 1 — Mental Maths Speed
-Timed arithmetic sprints in the style of trading-firm tests: two-minute sprints, an 80-questions-in-8-minutes simulator with penalties for wrong answers, and drills on fractions, percentages and odds conversion. Difficulty adapts to the question types you are slowest on or get wrong most often.
+Timed arithmetic in the style of trading-firm tests: two-minute sprints, an 80-questions-in-8-minutes test with −1 for wrong answers, and untimed practice. Nine categories: addition, subtraction, multiplication, division, decimals, fractions, percentages, estimation and odds (including pot odds). The question mix adapts to the categories you are slowest on or get wrong most often, using your history. Every answer gets a worked explanation, plus a technique tip when you were wrong or slow. See [how it works](docs/phase-1-mental-maths.md).
+
+```
+edge-engine play mental                     # sprint
+edge-engine play mental -o mode=test        # 80 in 8
+edge-engine play mental -o categories=odds  # one category
+```
 
 ### Phase 2 — Coin Flip with an Edge
 A biased coin (for example 60% heads) and a bankroll. You have an edge, but betting too much still loses money over time. Your bankroll is compared with Kelly and half-Kelly betting on the *same* flips, and there is a mode where you have to estimate the coin's bias as you play.
@@ -72,12 +78,13 @@ git config core.hooksPath githooks
 
 ```
 edge-engine list                         # available modules
+edge-engine play mental                  # mental maths sprint
 edge-engine play dice --seed 7           # play; the same seed replays the same session
 edge-engine stats                        # per-category results, slowest first
 pytest                                   # run the tests
 ```
 
-Answers can be typed as `0.25`, `1/4` or `25%`. Type `q` to stop. History is saved to `~/.edge_engine/history.db` (change it with `--db`, or turn it off with `--no-log`).
+Answers can be typed as `0.25`, `1/4` or `25%`. Type `s` to skip (where allowed) and `q` to stop. Module options are passed with `-o key=value`. History is saved to `~/.edge_engine/history.db` (change it with `--db`, or turn it off with `--no-log`).
 
 ## Project layout
 
@@ -90,13 +97,13 @@ src/edge_engine/
   loop.py       predict → reveal → score → log
   storage.py    SQLite history
   terminal.py   terminal front end
-  modules/      one file (or package) per game
+  modules/      one file (or package) per game: dice (demo), mental
 docs/           plan, log and a maths explainer per phase
 ```
 
 ## Status
 
-Phase 0 (foundations) is done; a small dice demo uses every part of it. Next is Phase 1, Mental Maths Speed. Games run in the terminal first. Each game is built end to end (engine, trainer, tests, docs) before the next one starts. The maths behind each phase is explained in `docs/`, starting with [Phase 0](docs/phase-0-foundations.md).
+Phases 0 (foundations) and 1 (Mental Maths Speed) are done. Next is Phase 2, Coin Flip with an Edge. Games run in the terminal first. Each game is built end to end (engine, trainer, tests, docs) before the next one starts. The maths behind each phase is explained in `docs/`, starting with [Phase 0](docs/phase-0-foundations.md) and [Phase 1](docs/phase-1-mental-maths.md).
 
 ## Licence
 
