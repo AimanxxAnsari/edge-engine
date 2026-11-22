@@ -46,8 +46,12 @@ def parse_answer(question: Question, text: str) -> Any:
     """Parse typed text for this question. Returns None for a skip."""
     if question.skippable and text.strip().lower() in SKIP_WORDS:
         return None
-    if question.params.get("unit") == "percent":  # '25' and '25%' both mean 25
+    params = question.params
+    if params.get("unit") == "percent":  # '25' and '25%' both mean 25
         return parse_number(text.strip().removesuffix("%"))
+    if "pct_base" in params and text.strip().endswith("%"):  # '20%' of the base
+        value = parse_number(text) * float(params["pct_base"])
+        return _check_range(question, value)
     kind = question.kind
     if kind is Kind.DECISION:
         s = text.strip().lower()
@@ -70,7 +74,23 @@ def parse_answer(question: Question, text: str) -> Any:
     value = parse_number(text)
     if kind is Kind.PROBABILITY and not 0.0 <= value <= 1.0:
         raise ParseError("a probability must be between 0 and 1")
+    return _check_range(question, value)
+
+
+def _check_range(question: Question, value: float) -> float:
+    lo, hi = question.params.get("min"), question.params.get("max")
+    if lo is not None and value < lo - 1e-9 or hi is not None and value > hi + 1e-9:
+        raise ParseError(f"must be between {_show(question, lo)} and {_show(question, hi)}")
     return value
+
+
+def _show(question: Question, x: Any) -> str:
+    if x is None:
+        return "any"
+    if question.params.get("unit") == "dollars":
+        sign = "−" if x < 0 else ""
+        return f"{sign}${abs(x):,.2f}"
+    return _fmt(float(x))
 
 
 def _fmt(x: float) -> str:
@@ -85,7 +105,7 @@ def format_truth(question: Question, truth: Any) -> str:
         return f"{best}  (EV: {evs})"
     if kind is Kind.PROBABILITY:
         return "it happened (1)" if truth else "it did not happen (0)"
-    return _fmt(float(truth))
+    return _show(question, float(truth))
 
 
 def format_answer(question: Question, answer: Any) -> str:
@@ -96,7 +116,7 @@ def format_answer(question: Question, answer: Any) -> str:
         return f"[{_fmt(lo)}, {_fmt(hi)}]"
     if question.kind is Kind.DECISION:
         return str(answer)
-    return _fmt(float(answer))
+    return _show(question, float(answer))
 
 
 def show_tip(turn: Turn) -> bool:
@@ -129,6 +149,8 @@ class TerminalUI:
             hint = " / ".join(question.choices)
         if question.params.get("unit") == "percent":
             hint = "a number, in %"
+        if question.params.get("unit") == "dollars" and "pct_base" in question.params:
+            hint = "dollars: 5 on heads, -5 on tails, or 20% of your bankroll"
         extras = "s to skip, q to quit" if question.skippable else "q to quit"
         self.out("")
         self.out(f"[{question.kind.value}] {question.prompt}")

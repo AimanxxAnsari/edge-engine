@@ -90,7 +90,9 @@ class GameModule(ABC):
         """Text shown before the questions at each step."""
         return ""
 
-    def observe(self, state: Any, question: Question, score: Score, seconds: float) -> Any:
+    def observe(
+        self, state: Any, question: Question, answer: Any, score: Score, seconds: float
+    ) -> Any:
         """Called after each answer is scored. Returns the (possibly updated) state."""
         return state
 

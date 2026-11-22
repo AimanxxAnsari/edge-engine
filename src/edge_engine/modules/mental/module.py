@@ -141,7 +141,7 @@ class MentalMaths(GameModule):
         return explain(dict(question.params))
 
     def observe(
-        self, state: MentalState, question: Question, score: Score, seconds: float
+        self, state: MentalState, question: Question, answer: Any, score: Score, seconds: float
     ) -> MentalState:
         elapsed = state.elapsed + seconds
         in_time = state.seconds is None or elapsed <= state.seconds

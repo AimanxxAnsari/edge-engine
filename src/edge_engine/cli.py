@@ -1,4 +1,4 @@
-"""Command line: `edge-engine list | play <module> | stats`."""
+"""Command line: `edge-engine list | play <module> | lab <name> | stats`."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .loop import run_session
-from .modules import REGISTRY, get_module
+from .modules import LABS, REGISTRY, get_module
 from .rng import Rng
 from .storage import DEFAULT_DB, Store
 from .terminal import TerminalUI
@@ -65,9 +65,19 @@ def _cmd_play(args: argparse.Namespace) -> int:
             store.close()
     n = len(res.turns)
     status = "finished" if res.completed else "stopped early"
-    print(f"\nSession {status}: {n} answers, {res.points:.2f} points out of {n}.")
     if res.summary:
-        print(res.summary)
+        print("\n" + res.summary)
+    print(f"\nSession {status}: {n} answers, {res.points:.2f} points out of {n}.")
+    return 0
+
+
+def _cmd_lab(args: argparse.Namespace) -> int:
+    seed = args.seed if args.seed is not None else 0
+    try:
+        print(LABS[args.name](dict(args.option or []), Rng(seed)))
+    except ValueError as e:
+        print(f"error: {e}")
+        return 2
     return 0
 
 
@@ -111,6 +121,19 @@ def build_parser() -> argparse.ArgumentParser:
     play.add_argument("--db", default=DEFAULT_DB, help=f"history file (default {DEFAULT_DB})")
     play.add_argument("--no-log", action="store_true", help="do not save answers")
     play.set_defaults(func=_cmd_play)
+
+    lab = sub.add_parser("lab", help="tables and simulations, no input needed")
+    lab.add_argument("name", choices=sorted(LABS))
+    lab.add_argument("--seed", type=int, help="seed for the simulations (default 0)")
+    lab.add_argument(
+        "-o",
+        "--option",
+        action="append",
+        type=parse_option,
+        metavar="KEY=VALUE",
+        help="lab option, e.g. -o p=0.55 -o flips=100",
+    )
+    lab.set_defaults(func=_cmd_lab)
 
     stats = sub.add_parser("stats", help="per-category stats, slowest first")
     stats.add_argument("--module", help="only this module")
