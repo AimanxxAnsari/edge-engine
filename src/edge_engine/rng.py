@@ -121,6 +121,18 @@ class Rng:
             raise ValueError("p must be in [0, 1]")
         return self.random() < p
 
+    def weighted_index(self, weights: Sequence[float]) -> int:
+        """Index i with probability weights[i] / sum(weights)."""
+        if not weights or any(w < 0 for w in weights) or sum(weights) <= 0:
+            raise ValueError("weights must be non-negative with a positive sum")
+        x = self.random() * sum(weights)
+        total = 0.0
+        for i, w in enumerate(weights):
+            total += w
+            if x < total:
+                return i
+        return max(i for i, w in enumerate(weights) if w > 0)  # float round-off at the top
+
     def choice(self, seq: Sequence[T]) -> T:
         if not seq:
             raise IndexError("cannot choose from an empty sequence")
