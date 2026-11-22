@@ -60,4 +60,8 @@ A from-scratch engine with move generation, alpha-beta search and position evalu
 
 ## Status
 
-Early development. Each game is built end to end (engine, trainer, tests, docs) before the next one starts.
+Early development. Games run in the terminal first. Each game is built end to end (engine, trainer, tests, docs) before the next one starts.
+
+## Licence
+
+MIT. See [LICENSE](LICENSE).

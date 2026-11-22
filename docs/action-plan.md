@@ -7,7 +7,7 @@
 1. **Design**: write the phase's design entry in `docs/log.md`: rules, the maths behind the truth function, data structures and open questions.
 2. **Engine**: write the "brain" from scratch (standard library + numpy only), with unit tests against known values.
 3. **Trainer**: add the predict → reveal → score questions on top of the engine.
-4. **Playable interface**: make the game playable (terminal first, web UI when the stack decision allows it).
+4. **Terminal interface**: make the game playable in the terminal.
 5. **Docs**: add a maths explainer in `docs/` (public) for the module.
 6. **Push**: commit to GitHub (nothing from `local-brain/`, ever).
 7. **Teach** (private): write `local-brain/pdfs/phase-N-<name>.pdf`, a teaching document covering what was built, how the code works, why each design choice was made, the maths, and exercises to check understanding.
@@ -97,7 +97,7 @@ Not a game, but every game depends on it.
 - [ ] Design entry in docs/log.md
 - [ ] Engine + tests
 - [ ] Trainer (questions / truth / explain)
-- [ ] Playable interface
+- [ ] Terminal interface
 - [ ] docs/ explainer
 - [ ] Pushed (local-brain check passed)
 - [ ] Teaching PDF in local-brain/pdfs/

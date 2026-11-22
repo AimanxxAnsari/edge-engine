@@ -16,10 +16,12 @@ Tags: **[DECISION]** = a choice made and why · **[DESIGN]** = how something is 
 **[DECISION] D-003: the game brains are built from scratch (Python standard library + numpy).** No Stockfish, no poker evaluator package, no gnubg, no chess.js for the logic. *Why:* the learning and the portfolio value are in building the engines. *Consequences:*
 - The language for the brains becomes **Python**, not TypeScript as in the report.
 - The chess engine will be much weaker than Stockfish, so "game review" grades moves against our own engine. Stockfish may be used *only outside the app* as a test oracle, never shipped.
-- Without bundled GPL code there's no GPL obligation. Licence still open (MIT vs GPL-3.0): **D-005, open**.
+- Without bundled GPL code there's no GPL obligation. Licence: see D-005.
 - Testing libraries (pytest) are tooling, not "brain", so they're allowed.
 
-**[OPEN] D-006: the UI layer.** Options: (a) terminal UI first, then a web front end (React) talking to a small Python API, keeping all logic in Python; (b) Pyodide, running Python in the browser. Proposed: (a). Decide before the end of Phase 0.
+**[DECISION] D-005: MIT licence.** *Why:* nothing GPL is bundled (engines are from scratch), so the simplest permissive licence works.
+
+**[DECISION] D-006: terminal interface first.** Each game is playable in the terminal before any web front end. *Why:* keeps the focus on the engines and the maths; a web UI can be added later on top of the same Python code. Built with the standard library only.
 
 **[WORK]** Created the repo: README (short description + a section per game), `.gitignore`, `CLAUDE.md`, and git hooks blocking `local-brain/`. Wrote `docs/action-plan.md` and this log, first inside `local-brain/`, then moved both to `docs/`: `local-brain/` is only for private files.
 
