@@ -86,7 +86,7 @@ def run_session(
             store.log_answer(session_id, q, answer, truth, score, seconds)
         if reveal is not None:
             reveal(turn)
-        return module.observe(at_state, q, score, seconds)
+        return module.observe(at_state, q, answer, score, seconds)
 
     try:
         while not module.is_terminal(state):

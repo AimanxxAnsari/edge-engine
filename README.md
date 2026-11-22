@@ -28,7 +28,7 @@ Questions can be point estimates ("what is your equity?"), decisions ("hit or st
 |---|---|---|---|
 | 0 | Foundations (+ dice demo) | Seeded RNG, probability, scoring, logging | Done |
 | 1 | Mental Maths Speed | Arithmetic speed and accuracy | Done |
-| 2 | Coin Flip with an Edge | Bet sizing, Kelly criterion, risk of ruin | Planned |
+| 2 | Coin Flip with an Edge | Bet sizing, Kelly criterion, risk of ruin | Done |
 | 3 | Blackjack | Conditional probability, card counting | Planned |
 | 4 | Market Making | Pricing, spreads, adverse selection | Planned |
 | 5 | Poker | Game theory, EV, ranges | Planned |
@@ -45,7 +45,14 @@ edge-engine play mental -o categories=odds  # one category
 ```
 
 ### Phase 2 — Coin Flip with an Edge
-A biased coin (for example 60% heads) and a bankroll. You have an edge, but betting too much still loses money over time. Your bankroll is compared with Kelly and half-Kelly betting on the *same* flips, and there is a mode where you have to estimate the coin's bias as you play.
+A biased coin (60% heads) and a $25 bankroll. You have an edge, but betting too much still loses money over time. Each bet is scored against the Kelly bet, and at the end your bankroll is compared with Kelly, half-Kelly and double-Kelly betting on the *same* flips, with a fan chart of 1,000 simulated runs at your average bet size. In the unknown-edge mode the bias is hidden and you have to estimate it as you play (Bayesian updating with a Beta prior). A lab command prints exact growth rates, mean and median outcomes, drawdown and ruin risk for any coin. See [the maths](docs/phase-2-kelly.md).
+
+```
+edge-engine play kelly                          # 50 flips of a 60% coin
+edge-engine play kelly -o flips=300 -o cap=250  # the classic experiment
+edge-engine play kelly -o mode=unknown          # hidden bias
+edge-engine lab kelly                           # no input needed
+```
 
 ### Phase 3 — Blackjack
 Configurable rules (number of decks, S17/H17, 3:2 or 6:5 payouts) and basic strategy computed from exact expected values. Includes a Hi-Lo counting trainer with running and true count, count-based strategy changes, and a review of how much EV each mistake cost.
@@ -79,6 +86,8 @@ git config core.hooksPath githooks
 ```
 edge-engine list                         # available modules
 edge-engine play mental                  # mental maths sprint
+edge-engine play kelly                   # bet sizing on a biased coin
+edge-engine lab kelly                    # Kelly tables and simulations
 edge-engine play dice --seed 7           # play; the same seed replays the same session
 edge-engine stats                        # per-category results, slowest first
 pytest                                   # run the tests
@@ -97,13 +106,13 @@ src/edge_engine/
   loop.py       predict → reveal → score → log
   storage.py    SQLite history
   terminal.py   terminal front end
-  modules/      one file (or package) per game: dice (demo), mental
+  modules/      one file (or package) per game: dice (demo), mental, kelly
 docs/           plan, log and a maths explainer per phase
 ```
 
 ## Status
 
-Phases 0 (foundations) and 1 (Mental Maths Speed) are done. Next is Phase 2, Coin Flip with an Edge. Games run in the terminal first. Each game is built end to end (engine, trainer, tests, docs) before the next one starts. The maths behind each phase is explained in `docs/`, starting with [Phase 0](docs/phase-0-foundations.md) and [Phase 1](docs/phase-1-mental-maths.md).
+Phases 0 (foundations), 1 (Mental Maths Speed) and 2 (Coin Flip with an Edge) are done. Next is Phase 3, Blackjack. Games run in the terminal first. Each game is built end to end (engine, trainer, tests, docs) before the next one starts. The maths behind each phase is explained in `docs/`, starting with [Phase 0](docs/phase-0-foundations.md), [Phase 1](docs/phase-1-mental-maths.md) and [Phase 2](docs/phase-2-kelly.md).
 
 ## Licence
 
