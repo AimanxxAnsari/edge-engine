@@ -245,3 +245,18 @@ Other checks: mean, median and P(below) against brute force over all 2¹⁰ flip
 **[DECISION] D-022: decision shortcuts.** `params["keys"]` maps single letters to choices, because "s" could mean stand, split or surrender.
 
 **[DECISION] D-023: mutable game state for blackjack.** A round has a shoe, several split hands and a dealer, and the state moves through stages (bet, insurance, decision). The state object is updated in place and returned, which the loop allows (it only threads the state through). Phases 1 and 2 keep their immutable states.
+
+**[WORK] Phase 3 built.** Package `src/edge_engine/modules/blackjack/`: `cards.py` (cards, hand totals, the shoe with a cut card, rules, Hi-Lo values), `ev.py` (dealer outcomes with peek; stand, hit, double, split with resplitting, surrender; the edge of a round; the compositions), `strategy.py` (chart codes, the total-dependent table, rendering), `count.py` (running and true count, bet spread, the published Illustrious 18 and Fab 4), `module.py` (`Blackjack`: strategy, count and drill modes), `lab.py` (`edge-engine lab blackjack`). Terminal: decision shortcut keys (D-022). 187 tests (52 new), all passing in under 5 s; ruff clean.
+
+The "Done when" checks:
+- The computed 6-deck chart equals the published S17 chart in all 340 cells, and the H17 chart (S17 with its six known changes) in all 340 cells.
+- The full deck counts to 0: for 20 shuffled shoes cut at a random point, the count of the seen cards plus the count of the rest is 0; and the count drill ends every deck at 0.
+
+Other checks: the infinite-deck chart differs from the published one only at A2 vs 5 and A4 vs 4; the dealer's bust chance showing a 6 agrees with a 40,000-hand simulation within 4 SE; H17 lowers the dealer's chance of 17 and raises busts; the house edge is 0.42%, and 6:5 costs exactly 0.3 × P(blackjack) × P(no dealer blackjack) ≈ 1.39%; the edge rises with the true count by 0.4–0.7% per count; insurance and all 21 published deviations are reproduced within 1.25 true counts. On a stacked shoe: blackjack pays 1.5 (or 1.2 at 6:5), dealer blackjack takes one bet, insurance pays 2:1, doubling, splitting eights with a double after the split, split aces with one card each (21 is not a blackjack), surrender, and H17 against S17 on the same cards. The hole card is not counted until shown; the bust-chance and insurance truths are checked against hand counts of the remaining cards; the bet answer sets the stake; a perfect player loses 0 EV over 150 hands in both modes.
+
+*Found while building:*
+- The first true-count composition gave aces and the 7–9 group a weight of 1 instead of 4 per deck, so the insurance index came out at 0. It was caught by comparing with the published +3.
+- The previous hand's result was cleared before it was shown, so a blackjack on the first hand never appeared. It is now kept separately.
+- Two of my test expectations were wrong (95 tens left, not 94; a script that returned only the answer); the code was right.
+
+*Left for later:* exact composition-dependent EVs (drawing without replacement inside the recursion), the 4-hand resplit limit inside the EV, a bankroll curve with risk of ruin, and H17 deviation indices.
