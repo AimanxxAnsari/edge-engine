@@ -15,6 +15,8 @@ from .kelly import lab as kelly_lab
 from .market import MarketMaking
 from .market import lab as market_lab
 from .mental import MentalMaths
+from .poker import Poker
+from .poker import lab as poker_lab
 
 REGISTRY: dict[str, type[GameModule]] = {
     DiceDemo.name: DiceDemo,
@@ -22,6 +24,7 @@ REGISTRY: dict[str, type[GameModule]] = {
     CoinFlip.name: CoinFlip,
     Blackjack.name: Blackjack,
     MarketMaking.name: MarketMaking,
+    Poker.name: Poker,
 }
 
 # Non-interactive analyses: name -> run(config, rng) -> text
@@ -29,6 +32,7 @@ LABS: dict[str, Callable[[Mapping[str, Any], Rng], str]] = {
     "kelly": kelly_lab.run,
     "blackjack": blackjack_lab.run,
     "market": market_lab.run,
+    "poker": poker_lab.run,
 }
 
 

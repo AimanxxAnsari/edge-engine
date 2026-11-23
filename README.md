@@ -31,7 +31,7 @@ Questions can be point estimates ("what is your equity?"), decisions ("hit or st
 | 2 | Coin Flip with an Edge | Bet sizing, Kelly criterion, risk of ruin | Done |
 | 3 | Blackjack | Conditional probability, card counting | Done |
 | 4 | Market Making | Pricing, spreads, adverse selection | Done |
-| 5 | Poker | Game theory, EV, ranges | Planned |
+| 5 | Poker | Game theory, EV, ranges | Done |
 | 6 | Backgammon | Dice probability, the doubling cube | Planned |
 | 7 | Chess | Search, evaluation, calculation | Planned |
 
@@ -74,7 +74,14 @@ edge-engine lab market                      # statistics and width economics
 ```
 
 ### Phase 5 — Poker
-Moves from Kuhn poker (3 cards, fully solved) to Leduc Hold'em to heads-up Hold'em. A from-scratch CFR solver finds the optimal mixed strategies, and the trainer drills outs, equity, pot odds, minimum defence frequency and thinking in ranges.
+A from-scratch CFR+ solver finds the equilibrium of Kuhn poker (value −1/18, inside Kuhn's known family of mixed strategies) and Leduc Hold'em (value −0.0856), checked by exact best-response calculations. You can play both games against the equilibrium bot or against exploitable bots; each decision is scored against the best response to the bot you face, so you learn when to mix and when to exploit. A from-scratch hand evaluator (checked on all 2,598,960 five-card hands) and an exact equity calculator power a Hold'em spot trainer for outs, equity, pot odds, call-or-fold, minimum defence frequency and bluff break-even. See [the maths](docs/phase-5-poker.md).
+
+```
+edge-engine play poker                    # Kuhn poker against the equilibrium
+edge-engine play poker -o mode=leduc      # Leduc Hold'em
+edge-engine play poker -o mode=spots      # Hold'em spots
+edge-engine lab poker                     # CFR convergence, evaluator, equity
+```
 
 ### Phase 6 — Backgammon
 A full rules engine, shot counting (how many of the 36 rolls hit a blot), pip-count drills and the doubling cube: when to double and when to take. A heuristic bot comes first, then a self-trained evaluator.
@@ -86,7 +93,7 @@ A from-scratch engine with move generation, alpha-beta search and position evalu
 
 ## Getting started
 
-Requires Python 3.10 or later. No runtime dependencies yet.
+Requires Python 3.10 or later and numpy.
 
 ```
 git clone https://github.com/AimanxxAnsari/edge-engine.git
@@ -103,9 +110,10 @@ edge-engine play kelly                   # bet sizing on a biased coin
 edge-engine lab kelly                    # Kelly tables and simulations
 edge-engine play blackjack               # basic strategy (mode=count to count cards)
 edge-engine play market                  # make a market on a sum of dice
+edge-engine play poker                   # Kuhn poker (mode=leduc, mode=spots)
 edge-engine play dice --seed 7           # play; the same seed replays the same session
 edge-engine stats                        # per-category results, slowest first
-pytest                                   # run the tests
+pytest                                   # run the tests (--runslow for the long ones)
 ```
 
 Answers can be typed as `0.25`, `1/4` or `25%`. Type `s` to skip (where allowed) and `q` to stop. Module options are passed with `-o key=value`. History is saved to `~/.edge_engine/history.db` (change it with `--db`, or turn it off with `--no-log`).
@@ -121,13 +129,14 @@ src/edge_engine/
   loop.py       predict → reveal → score → log
   storage.py    SQLite history
   terminal.py   terminal front end
-  modules/      one file (or package) per game: dice (demo), mental, kelly, blackjack, market
+  modules/      one file (or package) per game: dice (demo), mental, kelly, blackjack, market,
+                poker
 docs/           plan, log and a maths explainer per phase
 ```
 
 ## Status
 
-Phases 0 to 4 (foundations, Mental Maths Speed, Coin Flip with an Edge, Blackjack, Market Making) are done. Next is Phase 5, Poker. Games run in the terminal first. Each game is built end to end (engine, trainer, tests, docs) before the next one starts. The maths behind each phase is explained in `docs/`, starting with [Phase 0](docs/phase-0-foundations.md), [Phase 1](docs/phase-1-mental-maths.md), [Phase 2](docs/phase-2-kelly.md), [Phase 3](docs/phase-3-blackjack.md) and [Phase 4](docs/phase-4-market-making.md).
+Phases 0 to 5 (foundations, Mental Maths Speed, Coin Flip with an Edge, Blackjack, Market Making, Poker) are done. Next is Phase 6, Backgammon. Games run in the terminal first. Each game is built end to end (engine, trainer, tests, docs) before the next one starts. The maths behind each phase is explained in `docs/`, starting with [Phase 0](docs/phase-0-foundations.md), [Phase 1](docs/phase-1-mental-maths.md), [Phase 2](docs/phase-2-kelly.md), [Phase 3](docs/phase-3-blackjack.md), [Phase 4](docs/phase-4-market-making.md) and [Phase 5](docs/phase-5-poker.md).
 
 ## Licence
 
