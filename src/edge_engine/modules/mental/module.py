@@ -72,6 +72,9 @@ class MentalMaths(GameModule):
         defaults = MODES[mode]
         seconds = config.get("seconds", defaults["seconds"])
         questions = config.get("questions", defaults["questions"])
+        if config.get("wheels"):  # training wheels: no clock, a fixed number of questions
+            seconds = None
+            questions = questions or MODES["practice"]["questions"]
         if seconds is not None and float(seconds) <= 0:
             raise ValueError("seconds must be positive")
         if questions is not None and int(questions) < 1:

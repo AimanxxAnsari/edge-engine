@@ -472,3 +472,32 @@ Other checks: incremental Zobrist hash against recomputation and undo after ever
 - One test position of mine was illegal (Black already in check with White to move); the code was right.
 
 *Left for later:* a stronger engine (null-move pruning, late-move reductions, better evaluation), "find the best move" puzzles from your own blunders, an evaluation-graph view, and the Lichess game-accuracy weighting.
+
+---
+
+## 2026-11-23 — Phase 8: Training wheels and a Claude tutor
+
+**[DECISION] D-035: Phase 8 adds a learning layer across all seven games, in two parts.** 8a, training wheels: a learning mode that shows the answer before you act. 8b, a Claude tutor that answers questions about the current position, built on 8a. *Why:* the scored modes test you; there was no mode for learning a game you don't know yet. Requested by the user.
+
+**[DECISION] D-036: scored modes stay predict-then-reveal.** Training wheels is a separate mode with a separate log, so it never affects scores, stats or the adaptive question mix. In scored modes the tutor (8b) may give a hint that does not reveal the answer before you commit, and such answers are logged as "assisted"; full explanations come after the reveal. *Why:* the research notes' "crutch problem": seeing answers before committing stops you learning, so it must be a deliberate choice.
+
+**[DESIGN] 8a, training wheels.** `edge-engine play <game> --wheels`.
+- **Before each question:** the truth (the same exact truth function as the scored mode), the worked explanation and the technique tip, plus any extra teaching the game adds through a new optional hook, `lesson(state, question)`.
+- **After you type an answer, before it counts:** what it would score against the truth, plus game-specific feedback from a second optional hook, `judge(state, question, answer)`. Examples: the growth rate of your proposed bet in the coin flip, how many shots your chosen backgammon play leaves, the expected profit of your quote against noise traders. If the answer is not right you may keep it (Enter) or type another; nothing is played until you confirm.
+- **Forecast questions** (about an outcome that hasn't happened yet) never show their outcome in advance.
+- **Separate log:** sessions are logged under `<game>:wheels`, so `edge-engine stats` shows practice separately and the mental-maths adaptive weights never see it.
+- **Time:** modules receive `wheels=True` in their config, so they can drop time pressure (mental maths becomes untimed).
+
+Both hooks have empty defaults, so a game gets the generic behaviour without any changes.
+
+**[WORK] 8a built: training wheels.** `--wheels` on `edge-engine play`. The loop passes each question an `Aid` (truth, explanation, lesson, and a judge that scores an answer before it counts); forecasts carry no truth. Wheels sessions are logged as `<game>:wheels`. New optional hooks `lesson` and `judge` on the game contract. The terminal shows `learn:` lines before asking, and after an answer shows `check:` lines; a wrong answer, or any answer with game feedback, can be kept with Enter or replaced. Game-specific parts:
+- Mental maths: untimed (a fixed 20 or the given number of questions).
+- Coin flip: your bet's growth rate against Kelly's, with a warning when an over-bet shrinks you despite the edge.
+- Market making: the exact expected profit per trader of your quote. For noise traders, the chance each side trades times the edge; for informed traders, averaged over every value the next item could take; then mixed by the informed share.
+- Backgammon: the engine's top three plays with the shots each leaves, and the same for your choice.
+
+The other games use the generic aid, whose explanations already carry the useful numbers (blackjack and poker EVs with chart and equilibrium hints, chess top moves). 321 tests pass (8 new); ruff clean.
+
+Checks: the aid carries the truth for every question except forecasts; wheels sessions are logged separately and do not reach the adaptive history; a sprint under wheels runs the fixed 20 questions; the market judge matches the formula by hand (noise profit h(sd − h)/sd at a centred half-width h; informed loss −4/6 per trader against a ±1 quote on 4 dice); the terminal shows the lesson first and supports keeping, changing and comparing answers; the CLI flag and stats rows.
+
+*Found while trying it:* a correct answer with useful feedback (a market quote's economics) was accepted immediately, so you could not compare widths. Answers with feedback now always offer "keep or try another".

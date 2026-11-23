@@ -305,6 +305,50 @@ class MarketMaking(GameModule):
 
     # --- text ------------------------------------------------------------------
 
+    def quote_economics(self, s: MarketState, bid: Fraction, ask: Fraction) -> dict[str, float]:
+        """Exact expected profit per trader of a quote, by trader type.
+
+        Noise traders value the contract at fair ± up to one sd (uniform). Informed
+        traders know the next item; their value is averaged over what it could be.
+        """
+        f, sd = float(self.fair(s)), self.sd(s)
+        a, b = float(ask), float(bid)
+        p_buy = min(1.0, max(0.0, (f + sd - a) / (2 * sd))) if sd else float(f > a)
+        p_sell = min(1.0, max(0.0, (b - (f - sd)) / (2 * sd))) if sd else float(f < b)
+        noise = p_buy * (a - f) + p_sell * (f - b)
+        if s.kind == "dice":
+            peeks = [(x, 1 / 6) for x in range(1, 7)]
+        else:
+            counts = contract.unseen_cards(s.revealed)
+            total = sum(counts.values())
+            peeks = [(v, c / total) for v, c in counts.items() if c]
+        informed = 0.0
+        for x, w in peeks:
+            g = float(contract.informed_value(s.kind, s.revealed, x, s.n))
+            if g > a:
+                informed += w * (a - g)  # they buy from you below their value
+            elif g < b:
+                informed += w * (g - b)  # they sell to you above their value
+        share = s.informed_share
+        return {
+            "noise": noise,
+            "informed": informed,
+            "mixed": (1 - share) * noise + share * informed,
+        }
+
+    def judge(self, s: MarketState, q: Question, answer: Any) -> str:
+        """Training wheels: what this quote earns per trader, on average."""
+        if q.category != "quote" or answer is None:
+            return ""
+        bid, ask = bots.price(answer[0]), bots.price(answer[1])
+        e = self.quote_economics(s, bid, ask)
+        half = (float(ask) - float(bid)) / 2 / self.sd(s) if self.sd(s) else 0.0
+        return (
+            f"half-width {half:.2f} sd. Expected profit per trader: noise {e['noise']:+.2f}, "
+            f"informed {e['informed']:+.2f}; with {s.informed_share:.0%} informed, "
+            f"{e['mixed']:+.2f} per trader."
+        )
+
     def describe(self, s: MarketState) -> str:
         lines = []
         if s.shown == 0:

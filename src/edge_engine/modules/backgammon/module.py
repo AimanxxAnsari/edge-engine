@@ -155,6 +155,26 @@ class Backgammon(GameModule):
         else:
             self._new_game(s)
 
+    def lesson(self, s: BGState, q: Question) -> str:
+        """Training wheels: the engine's top plays and the shots each one leaves."""
+        if q.category != "checker-play":
+            return ""
+        scores = self._engine_scores(s)
+        by_name = {str(p): p for p in s.plays}
+        top = sorted(scores, key=lambda k: -scores[k])[:3]
+        lines = ["engine's top plays (shots = rolls of 36 that hit one of your blots):"]
+        for name in top:
+            left = shots.any_shot_rolls(by_name[name].after)
+            lines.append(f"  {name}: score {scores[name]:+.2f}, leaves {left} shots")
+        return "\n".join(lines)
+
+    def judge(self, s: BGState, q: Question, answer: Any) -> str:
+        if q.category != "checker-play" or answer is None:
+            return ""
+        play = next(p for p in s.plays if str(p) == answer)
+        left = shots.any_shot_rolls(play.after)
+        return f"{answer}: engine score {bots.evaluate(play.after):+.2f}, leaves {left} shots."
+
     def _engine_scores(self, s: BGState) -> dict[str, float]:
         return {str(p): bots.evaluate(p.after) for p in s.plays}
 

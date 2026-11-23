@@ -341,6 +341,22 @@ class CoinFlip(GameModule):
         lines.append(head)
         return "\n".join(lines)
 
+    def judge(self, state: KellyState, question: Question, answer: Any) -> str:
+        """Training wheels: the growth rate of the proposed bet against Kelly's."""
+        if question.category != "kelly-bet" or answer is None or state.wealth_c <= 0:
+            return ""
+        f = float(answer) * 100 / state.wealth_c
+        pb = self.believed_p(state)
+        f_k = kmath.kelly_fraction(pb)
+        g, g_k = kmath.growth_rate(f, pb), kmath.growth_rate(f_k, pb)
+        text = (
+            f"betting {pct(f)} of your bankroll grows it by {growth_text(g)} per flip on "
+            f"average; Kelly ({pct(f_k)}) grows it by {growth_text(g_k)}."
+        )
+        if g < 0 < g_k:
+            text += " Too big: with an edge, this bet still shrinks you over time."
+        return text
+
     def summary(self, state: KellyState) -> str:
         lines = [state.last, ""] if state.last else []
         lines.append(f"Final bankroll: you {dollars(state.wealth_c)}.")

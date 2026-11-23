@@ -41,7 +41,17 @@ class SessionResult:
         return sum(t.score.points for t in self.turns)
 
 
-AskFn = Callable[[Question], tuple[Any, float]]  # returns (answer, seconds taken)
+@dataclass(frozen=True)
+class Aid:
+    """What training wheels shows before and during a question."""
+
+    truth: Any  # None for forecasts: their outcome isn't known yet
+    explanation: str
+    lesson: str
+    judge: Callable[[Any], tuple[Score | None, str]]  # answer -> (would-be score, feedback)
+
+
+AskFn = Callable[..., tuple[Any, float]]  # ask(question[, aid=Aid]) -> (answer, seconds)
 ActFn = Callable[[Any, list[str]], str]
 RevealFn = Callable[[Turn], None]
 ShowFn = Callable[[str], None]
@@ -62,18 +72,26 @@ def run_session(
     reveal: RevealFn | None = None,
     show: ShowFn | None = None,
     store: Store | None = None,
+    wheels: bool = False,
 ) -> SessionResult:
     """Play one session.
 
     At each state: show the description, ask every question, score and reveal the
     immediate ones, take an action, then score the forecasts against the new state.
     After every scored answer the module's observe() may update the state.
+
+    With `wheels` (training wheels), each question is asked with an Aid: the truth and
+    explanation up front, and a judge for the answer before it counts. The session is
+    logged as '<module>:wheels' so it stays out of normal stats.
     """
     config = dict(config or {})
+    if wheels:
+        config["wheels"] = True
     act = act or _only_action
     rng = Rng(seed)
     state = module.init(rng, config)
-    session_id = store.start_session(module.name, seed, config) if store else None
+    log_name = f"{module.name}:wheels" if wheels else module.name
+    session_id = store.start_session(log_name, seed, config) if store else None
     out = SessionResult(module=module.name, seed=seed, session_id=session_id)
 
     def finish(q: Question, answer: Any, seconds: float, at_state: Any) -> Any:
@@ -88,6 +106,18 @@ def run_session(
             reveal(turn)
         return module.observe(at_state, q, answer, score, seconds)
 
+    def make_aid(q: Question, at_state: Any) -> Aid:
+        if q.kind is Kind.PROBABILITY:  # a forecast: never reveal the future
+            truth, explanation = None, ""
+        else:
+            truth, explanation = module.truth(at_state, q), module.explain(at_state, q)
+
+        def judge(answer: Any) -> tuple[Score | None, str]:
+            score = score_answer(q, answer, truth, 0.0) if truth is not None else None
+            return score, module.judge(at_state, q, answer)
+
+        return Aid(truth, explanation, module.lesson(at_state, q), judge)
+
     try:
         while not module.is_terminal(state):
             if show is not None:
@@ -96,7 +126,10 @@ def run_session(
                     show(text)
             pending: list[tuple[Question, Any, float]] = []
             for q in module.questions(state):
-                answer, seconds = ask(q)
+                if wheels:
+                    answer, seconds = ask(q, aid=make_aid(q, state))
+                else:
+                    answer, seconds = ask(q)
                 if q.kind is Kind.PROBABILITY:
                     pending.append((q, answer, seconds))
                 else:
