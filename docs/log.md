@@ -407,3 +407,19 @@ The explanations also cover why owning the cube moves the real decisions (the do
 **[DECISION] D-031: checker play is scored against the engine's evaluation, not exact equity.** Backgammon equity is not computable exactly in the middle game. The scores are honest about being an engine's opinion. The exact parts (shots, pip counts, bear-off chances, dead-cube decisions) carry the teaching.
 
 **[DECISION] D-032: the TD network is optional.** Training takes minutes in pure Python, so it is a lab command with saved weights, not part of the default game. Its test is marked slow.
+
+**[WORK] Phase 6 built.** Package `src/edge_engine/modules/backgammon/`: `board.py` (positions from the side to move, `flip`, pips, legal plays, results, a text board), `shots.py` (hitting rolls by the real move generator, the open-board table), `bots.py` (evaluation, random, greedy 0-ply, 1-ply, `play_game`), `bearoff.py` (exact one-sided distributions, win chances, dead-cube values, the 8-9-12 rule), `td.py` (196-40-1 network, gradient, TD(0) self-play training, save and load), `module.py` (`Backgammon`: play, shots, cube), `lab.py` (`edge-engine lab backgammon`, optional training). Terminal: long decision lists show "a number from 1 to n" and only the best play in the reveal. 282 tests pass in about 16 s, plus the slow ones (exhaustive five-card count, TD training); ruff clean.
+
+The "Done when" checks:
+- **Perft-style move counts:** the fast generator and an independent reference generator give identical sets of resulting positions for all 21 rolls in 250 positions from random games (5,250 cases), and for the opening (447 plays in total; 16 for 3-1). Hand-made positions check the closed board, the larger-die rule, the bear-off rules (including bearing off from the highest point with a larger die) and the use-both-dice rule.
+- **The shot table** 11, 12, 14, 15, 15, 17, 6, 6, 5, 3, 2, 3 is reproduced by the move generator; blocked points and bar entry are tested separately.
+- **The bot beats random:** the heuristic bot wins at least 30 of 40 games (it won 37 of 40 in the lab and about 90% in general). The TD network, trained for 1,000 self-play games, wins at least 32 of 40 (slow test).
+
+Other checks: bear-off expectations by hand (1.25 rolls for one checker on the 6-point; 4/36 to clear two from the 6-point in one roll), the bear-off win chance against a 3,000-game simulation under the same policy (within 4 SE), cube values (take and drop equal at 75%; with a dead cube, doubling beats not doubling exactly when p > 50%), the 8-9-12 rule, the TD gradient against finite differences, a TD update moves the estimate towards its target, and full sessions in all three modes.
+
+*Found while building:*
+- At a learning rate of 0.1 the TD network had not started to learn after 1,500 games; at 0.3 it learns within 1,000 for every seed tried, and beats the heuristic bot in 55-82% of games after 1,000-2,500. The default is 0.3.
+- A turn with exactly one legal play produced a "choice" of one option; forced plays are now made automatically.
+- Five of my own test expectations were wrong and the generator right: a roll stored as (1, 3), a bear-off with two legal results, a position where both dice could not be used, a 6-2 that still hits by playing the 2 first, and 14 (not 12) rolls entering from the bar onto a blot on the 3-point.
+
+*Left for later:* a live-cube model (cube ownership, gammons) and cube decisions inside play mode, Keith count, rollouts for middle-game positions, and a "which play leaves the fewest shots" question.

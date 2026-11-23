@@ -142,6 +142,16 @@ Status (23 Nov 2026): **done** (branch `phase-5-poker`), with Hold'em as a spot 
 
 **Done when:** move generation passes perft-style counts, the shot table is reproduced, and the bot beats a random player.
 
+Status (23 Nov 2026): **done** (branch `phase-6-backgammon`).
+- [x] Design entry in docs/log.md
+- [x] Engine + tests
+- [x] Trainer (questions / truth / explain)
+- [x] Terminal interface
+- [x] docs/ explainer (`docs/phase-6-backgammon.md`)
+- [x] Pushed (local-brain check passed)
+- [x] Teaching PDF in local-brain/pdfs/
+- [x] Work-log entry in docs/log.md
+
 ## Phase 7 — Chess
 
 - Board representation (bitboards or 0x88), legal move generation, FEN/PGN.
