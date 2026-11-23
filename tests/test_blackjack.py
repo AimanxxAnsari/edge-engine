@@ -190,7 +190,7 @@ def test_edge_and_payout():
         INFINITE[u - 1] * (1 - dealer_blackjack_chance(u, INFINITE)) for u in range(1, 11)
     )
     assert edge - six_five == pytest.approx(0.3 * p_bj * not_dealer_bj)
-    assert edge - six_five == pytest.approx(0.0139, abs=0.0005)  # "about 1.4%"
+    assert edge - six_five == pytest.approx(0.01353, abs=0.00001)  # 0.3 × 8/169 × (1 − 8/169)
 
 
 def test_edge_rises_about_half_a_percent_per_true_count():

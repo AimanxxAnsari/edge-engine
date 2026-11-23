@@ -20,16 +20,51 @@ The default game is 6 decks, the dealer stands on soft 17 (S17), blackjack pays 
 
 ## 2. The EV solver
 
-Every number in this module comes from one solver. It assumes cards are drawn independently from a fixed **composition**: a probability for each value, ace to ten.
+Every number in this module comes from one solver. It assumes cards are drawn independently from a fixed **composition** $`c = (c_1, \dots, c_{10})`$, where $`c_v`$ is the probability of value $`v`$ (1 is an ace, 10 is any ten-value card).
 
-**Dealer.** Starting from the upcard, the dealer draws until reaching 17 or more (and also hits soft 17 under H17). A recursion over (hard sum, has an ace) gives the probability of finishing on 17, 18, 19, 20, 21 or bust. With peek, the hole card is drawn as if it cannot complete a blackjack.
+**Hands.** A hand is stored as its hard sum $`h`$ (aces counted as 1) and whether it holds an ace $`a`$. Its total is
 
-**Player.**
-- *Stand:* win if the dealer busts or ends lower, push if equal, lose if higher.
-- *Hit:* take a card, then do whichever of hit or stand is better, recursively.
-- *Double:* twice the stake, exactly one more card, then stand.
-- *Surrender:* lose half the bet, −0.5.
-- *Split:* each hand starts with one card of the pair. Let A be the value from non-matching second cards, B the value of keeping a matching card as a pair, and p the chance of a matching card. With resplitting, each hand is worth x = A + p·max(B, 2x), so x = A / (1 − 2p) when resplitting pays. Split aces get one card each, and ace-ten after a split is 21, not blackjack.
+```math
+t(h, a) = \begin{cases} h + 10 & \text{if } a \text{ and } h + 10 \le 21 \quad (\text{a soft hand}) \\ h & \text{otherwise.} \end{cases}
+```
+
+**Dealer.** Starting from the upcard, the dealer draws until reaching 17 or more (and also hits soft 17 under H17). The distribution $`D`$ of the final total over $`\{17, 18, 19, 20, 21, \text{bust}\}`$ is a recursion:
+
+```math
+D(h, a) = \begin{cases} \text{point mass at } t(h, a) & \text{if the dealer stands} \\ \sum_{v=1}^{10} c_v\, Digl(h + v,\ a \lor [v = 1]\bigr) & \text{otherwise.} \end{cases}
+```
+
+**Peek.** With an ace up the hole card cannot be a ten, and with a ten up it cannot be an ace, so the first draw uses the composition with that value removed and renormalised, e.g. $`c'_v = c_v / (1 - c_{10})`$ for $`v \ne 10`$. Every decision is then correctly conditioned on "no dealer blackjack".
+
+**Player.** With $`D_{17}, \dots, D_{21}, D_{\text{bust}}`$ the dealer's chances:
+
+```math
+\mathrm{Stand}(t) = D_{\text{bust}} + \sum_{d < t} D_d - \sum_{d > t} D_d \qquad (t \le 21; \text{ a bust hand is } -1),
+```
+
+```math
+\mathrm{Hit}(h, a) = \sum_{v=1}^{10} c_v \max\Bigl(\mathrm{Stand}\bigl(t(h + v, a')\bigr),\ \mathrm{Hit}(h + v, a')\Bigr), \qquad a' = a \lor [v = 1],
+```
+
+```math
+\mathrm{Double}(h, a) = 2 \sum_{v=1}^{10} c_v\, \mathrm{Stand}\bigl(t(h + v, a')\bigr), \qquad \mathrm{Surrender} = -\tfrac12 .
+```
+
+**Split.** Each hand starts with one card $`r`$ of the pair. Let $`A`$ be the value from the second cards that don't match, $`B`$ the value of keeping a matching card as an ordinary hand, and $`p = c_r`$. With resplitting, a matching card turns one hand into two, each worth the same $`x`$:
+
+```math
+x = A + p\,\max(B,\ 2x) \;\Longrightarrow\; x = \frac{A}{1 - 2p} \quad \text{when resplitting pays,} \qquad \mathrm{Split} = 2x .
+```
+
+Split aces get one card each, and ace-ten after a split is 21, not blackjack.
+
+**The edge of a round.** Summing over the upcard $`u`$ and the player's two cards: a player blackjack pays the payout $`\beta`$ (1.5 at 3:2) unless the dealer also has one; otherwise a dealer blackjack costs one bet; otherwise the best action's EV:
+
+```math
+\text{edge} = \sum_{u} c_u \sum_{\text{hands}} P(\text{hand}) \Bigl[ \mathbf{1}_{\text{BJ}}\,(1 - d_u)\,\beta + \mathbf{1}_{\text{no BJ}} \bigl( -d_u + (1 - d_u) \max_{\text{action}} \mathrm{EV} \bigr) \Bigr],
+```
+
+where $`d_u`$ is the chance the dealer has blackjack with upcard $`u`$.
 
 **Compositions.**
 
@@ -53,7 +88,11 @@ Patterns worth remembering:
 - Always split aces and eights; never split tens or fives.
 - Double 11 against everything but an ace (S17), and 10 against 2–9.
 
-With perfect basic strategy the house edge is about **0.42%**. Paying 6:5 instead of 3:2 for blackjack costs another 0.3 × P(blackjack) ≈ **1.4%**.
+With perfect basic strategy the house edge is about **0.42%**. Paying 6:5 instead of 3:2 changes only the blackjack payout, so the difference is exact:
+
+```math
+\Delta = (1.5 - 1.2) \times P(\text{player BJ}) \times P(\text{no dealer BJ}) = 0.3 \times \frac{2 \cdot 4}{169} \times \left(1 - \frac{2 \cdot 4}{169}\right) \approx 1.35\% .
+```
 
 ---
 
@@ -65,13 +104,39 @@ With perfect basic strategy the house edge is about **0.42%**. Paying 6:5 instea
 | 7, 8, 9 | 0 |
 | 10, J, Q, K, A | −1 |
 
-The **running count** is the sum over every card seen since the shuffle. The dealer's hole card counts only once it is turned over. Hi-Lo is **balanced**: a full deck sums to zero, so a high running count means the cards still to come are rich in tens and aces.
+The **running count** is the sum over every card seen since the shuffle. The dealer's hole card counts only once it is turned over. Hi-Lo is **balanced**: per deck, $`5 \times 4 = 20`$ cards count $`+1`$ and $`16 + 4 = 20`$ count $`-1`$, so
 
-The **true count** divides by the decks left: TC = RC / (unseen cards / 52). A running count of +6 means much more with one deck left (TC +6) than with six (TC +1).
+```math
+\sum_{\text{deck}} \text{value} = 0 \quad\Longrightarrow\quad \text{RC}_{\text{seen}} + \text{RC}_{\text{unseen}} = 0 .
+```
+
+Whatever you have seen, the unseen cards count exactly minus your running count, so a high running count means the cards still to come are rich in tens and aces.
+
+The **true count** divides by the decks left:
+
+```math
+\text{TC} = \frac{\text{RC}}{\text{unseen cards} / 52} .
+```
+
+A running count of +6 means much more with one deck left (TC +6) than with six (TC +1).
+
+**The average shoe at a true count.** A true count of $`t`$ means high cards exceed low cards by $`t`$ per deck. Keeping 52 cards per deck splits that half and half, so per deck there are
+
+```math
+20 + \tfrac{t}{2} \ \text{high cards (tens and aces)}, \qquad 20 - \tfrac{t}{2} \ \text{low cards (2-6)}, \qquad 12 \ \text{neutral (7-9)},
+```
+
+each spread evenly within its group. The solver uses this shoe for the edge by count and for the deviation indices.
 
 **Why high cards help the player.** More blackjacks, which pay 3:2 to you but only 1:1 to the dealer. Doubles land on tens more often. And the dealer, who must hit 12–16, busts more often. In the solver's average shoe, each +1 of true count adds about **+0.56%** to the player's edge: from −0.42% at TC 0 to about +0.15% at TC +1 and +1.9% at TC +4.
 
-**Bet spread.** Bet 1 unit at TC ≤ 1, then 2, 4, 6 and 8 units at TC 2, 3, 4 and 5+ (floor of the true count). The edge rises with the count, and Kelly says to bet in proportion to the edge, as in Phase 2.
+**Bet spread.** With $`\tau = \lfloor \text{TC} \rfloor`$:
+
+```math
+\text{bet} = \begin{cases} 1 & \tau \le 1 \\ 2,\ 4,\ 6 & \tau = 2,\ 3,\ 4 \\ 8 & \tau \ge 5 \end{cases} \ \text{units.}
+```
+
+The edge rises with the count (about 0.56% per true count here), and Kelly says to bet in proportion to the edge, as in Phase 2.
 
 ---
 
@@ -79,7 +144,21 @@ The **true count** divides by the decks left: TC = RC / (unseen cards / 52). A r
 
 At high counts some plays change: stand on 16 vs 10, take insurance, double 10 vs 10. Don Schlesinger's **Illustrious 18** and **Fab 4** (surrenders) list the most valuable changes with their **index**: make the change when the true count is at least the index.
 
-**Insurance** is the clearest case. It pays 2:1 if the hole card is a ten, so it is worth it when more than one card in three is a ten. In the average shoe that happens at TC ≈ +3.1, against the published +3.
+**Insurance** is the clearest case. It costs half your bet and pays 2:1 if the hole card is a ten. With $`p = P(\text{ten})`$ among the unseen cards, per unit of your main bet:
+
+```math
+\mathbb{E}[\text{insurance}] = \tfrac12 \bigl( 2p - (1 - p) \bigr) = \tfrac12 (3p - 1) > 0 \iff p > \tfrac13 .
+```
+
+In the average shoe that happens at TC ≈ +3.1, against the published +3.
+
+**Finding an index.** For a play with the deviation $`D`$ and the basic play $`B`$, the index is the true count where the margin changes sign:
+
+```math
+\text{index} = \min \bigl\{ t : \mathrm{EV}_t(D) - \mathrm{EV}_t(B) > 0 \bigr\},
+```
+
+with the EVs computed in the average shoe at true count $`t`$, averaged over the two-card hands that make the total.
 
 The lab computes each index by finding the true count where the change becomes the better play, in an average shoe with 3 of 6 decks left. Computed against published:
 
@@ -108,8 +187,8 @@ In **count mode**, decisions are scored against the EVs for the cards you have a
 | Question | When | Truth |
 |---|---|---|
 | Hit / stand / double / split / surrender | every decision | EV of each action; error = EV lost |
-| Insurance | dealer shows an ace | 0.5·(3p − 1) with p = chance the hole card is a ten |
-| Bust chance if you hit | strategy mode, two-card hard 12–16 | share of cards that bust you |
+| Insurance | dealer shows an ace | $`\tfrac12(3p - 1)`$ with $`p`$ = chance the hole card is a ten |
+| Bust chance if you hit | strategy mode, two-card hard 12–16 | $`\sum_{v \ge 22 - t} c_v`$ for a hard total $`t`$ |
 | Running count, true count, bet | count mode, before each hand | Hi-Lo of the seen cards; RC / decks left; the spread |
 | Running count after a batch | drill mode | the count so far; the deck ends at 0 |
 | True count conversion | drill mode, every third batch | RC / decks |

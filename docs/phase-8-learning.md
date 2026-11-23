@@ -30,8 +30,16 @@ Before each question you see:
 - a game's extra **lesson**, such as backgammon's top three plays and the shots each leaves.
 
 After you type an answer you see what it would score, plus the game's **judgement** of that answer. Then you press Enter to keep it, or type another to compare. Examples:
-- **Coin flip:** the growth rate of your bet against Kelly's, with a warning when a big bet shrinks you despite the edge.
-- **Market making:** your quote's exact expected profit per trader. For noise traders, the chance each side trades times the edge. For informed traders, averaged over every value the next item could take. Then mixed by the informed share.
+- **Coin flip:** the growth rate of your bet as a fraction $`f`$ of your bankroll, $`g(f) = p\ln(1 + f) + q\ln(1 - f)`$, against Kelly's $`g(f^*)`$, with a warning when $`g(f) < 0 < g(f^*)`$: a big bet that shrinks you despite the edge.
+- **Market making:** your quote's exact expected profit per trader. For a bid $`b`$ and ask $`a`$ around fair value $`F`$, with noise traders valuing the contract uniformly within $`F \pm \sigma`$:
+
+```math
+\pi_{\text{noise}} = \frac{F + \sigma - a}{2\sigma}\,(a - F) + \frac{b - F + \sigma}{2\sigma}\,(F - b),
+\qquad
+\pi_{\text{informed}} = \mathbb{E}_x\Bigl[(a - G_x)\,\mathbf{1}[G_x > a] + (G_x - b)\,\mathbf{1}[G_x < b]\Bigr],
+```
+
+  where $`G_x`$ is the informed trader's value when the next item is $`x`$ (each probability clipped to $`[0, 1]`$). Then mixed by the informed share $`\alpha`$: $`(1 - \alpha)\,\pi_{\text{noise}} + \alpha\,\pi_{\text{informed}}`$.
 - **Backgammon:** the engine's score of your play and how many shots it leaves.
 
 Forecast questions ("will this roll be at least 9?") never show their outcome early, since it hasn't happened yet.
@@ -59,7 +67,13 @@ Its instructions say every number must come from that data, or be simple arithme
 - Effort: low, since these are short chat answers.
 - The instructions and explainer are cached, so repeat questions read them cheaply.
 - The API's automatic refusal fallback is on: if the main model declines, a fallback model answers.
-- The session summary shows the token use and an estimated cost.
+- The session summary shows the token use and an estimated cost. With $`T_{\text{in}}`$, $`T_{\text{out}}`$, $`T_{\text{read}}`$ and $`T_{\text{write}}`$ the uncached input, output, cache-read and cache-write tokens, and $`c`$ the model's price per million tokens for each:
+
+```math
+\text{cost} = \frac{c_{\text{in}} T_{\text{in}} + c_{\text{out}} T_{\text{out}} + c_{\text{read}} T_{\text{read}} + c_{\text{write}} T_{\text{write}}}{10^6} .
+```
+
+  For Claude Opus 5.5 that is \$4, \$20, \$0.20 and \$5 per million, so a question with a few hundred fresh tokens, a few thousand cached ones and a short answer costs about a cent.
 
 **Setup.**
 ```
