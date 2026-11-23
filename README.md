@@ -32,7 +32,7 @@ Questions can be point estimates ("what is your equity?"), decisions ("hit or st
 | 3 | Blackjack | Conditional probability, card counting | Done |
 | 4 | Market Making | Pricing, spreads, adverse selection | Done |
 | 5 | Poker | Game theory, EV, ranges | Done |
-| 6 | Backgammon | Dice probability, the doubling cube | Planned |
+| 6 | Backgammon | Dice probability, the doubling cube | Done |
 | 7 | Chess | Search, evaluation, calculation | Planned |
 
 ### Phase 1 — Mental Maths Speed
@@ -84,7 +84,14 @@ edge-engine lab poker                     # CFR convergence, evaluator, equity
 ```
 
 ### Phase 6 — Backgammon
-A full rules engine, shot counting (how many of the 36 rolls hit a blot), pip-count drills and the doubling cube: when to double and when to take. A heuristic bot comes first, then a self-trained evaluator.
+A full rules engine (bar, blocks, hits, bearing off, the use-as-many-dice-as-possible and larger-die rules, gammons and backgammons), checked against an independent second move generator. Shot counting uses the real move generator, so blocked points count, and reproduces the classic 1-12 table. Play a game against a hand-written bot, a 1-ply search bot or a small TD-learning network trained by self-play. Drill pip counts and shots. Learn the cube with exact bear-off winning chances, the 25% take point and the 8-9-12 race rule. See [the maths](docs/phase-6-backgammon.md).
+
+```
+edge-engine play backgammon                  # a game against the bot
+edge-engine play backgammon -o mode=shots    # pip counts and shots
+edge-engine play backgammon -o mode=cube     # bear-off chances and cube decisions
+edge-engine lab backgammon -o train=1500     # train the TD network
+```
 
 ### Phase 7 — Chess
 A from-scratch engine with move generation, alpha-beta search and position evaluation, plus a game-review mode that converts evaluations to win% and rates each move. No hidden information or dice, so it covers calculation and evaluation.
@@ -111,6 +118,7 @@ edge-engine lab kelly                    # Kelly tables and simulations
 edge-engine play blackjack               # basic strategy (mode=count to count cards)
 edge-engine play market                  # make a market on a sum of dice
 edge-engine play poker                   # Kuhn poker (mode=leduc, mode=spots)
+edge-engine play backgammon              # a game of backgammon (mode=shots, mode=cube)
 edge-engine play dice --seed 7           # play; the same seed replays the same session
 edge-engine stats                        # per-category results, slowest first
 pytest                                   # run the tests (--runslow for the long ones)
@@ -130,13 +138,13 @@ src/edge_engine/
   storage.py    SQLite history
   terminal.py   terminal front end
   modules/      one file (or package) per game: dice (demo), mental, kelly, blackjack, market,
-                poker
+                poker, backgammon
 docs/           plan, log and a maths explainer per phase
 ```
 
 ## Status
 
-Phases 0 to 5 (foundations, Mental Maths Speed, Coin Flip with an Edge, Blackjack, Market Making, Poker) are done. Next is Phase 6, Backgammon. Games run in the terminal first. Each game is built end to end (engine, trainer, tests, docs) before the next one starts. The maths behind each phase is explained in `docs/`, starting with [Phase 0](docs/phase-0-foundations.md), [Phase 1](docs/phase-1-mental-maths.md), [Phase 2](docs/phase-2-kelly.md), [Phase 3](docs/phase-3-blackjack.md), [Phase 4](docs/phase-4-market-making.md) and [Phase 5](docs/phase-5-poker.md).
+Phases 0 to 6 (foundations, Mental Maths Speed, Coin Flip with an Edge, Blackjack, Market Making, Poker, Backgammon) are done. Next is Phase 7, Chess. Games run in the terminal first. Each game is built end to end (engine, trainer, tests, docs) before the next one starts. The maths behind each phase is explained in `docs/`, starting with [Phase 0](docs/phase-0-foundations.md), [Phase 1](docs/phase-1-mental-maths.md), [Phase 2](docs/phase-2-kelly.md), [Phase 3](docs/phase-3-blackjack.md), [Phase 4](docs/phase-4-market-making.md), [Phase 5](docs/phase-5-poker.md) and [Phase 6](docs/phase-6-backgammon.md).
 
 ## Licence
 

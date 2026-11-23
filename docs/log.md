@@ -369,3 +369,57 @@ Other checks: the best response equals the best of all 64 pure strategies in Kuh
 - Two of my test expectations were wrong (a full house that also held a pair of aces; a "maniac" value I wrote into the docs before computing it, +0.42, when it is +1/3); the code was right in both.
 
 *Left for later:* heads-up Hold'em against rule-based bots (D-027), Monte Carlo CFR for bigger games, a 13×13 range grid for range questions, and win-rate variance tools.
+
+---
+
+## 2026-11-23 — Phase 6: Backgammon
+
+**[DESIGN] Phase 6 design.**
+
+*Board* (`board.py`). Always stored from the side to move: 24 points (index 0 = that player's 1-point), positive numbers are the mover's checkers and negative the opponent's, plus both bars and both borne-off counts. The mover always moves from 24 towards 1 and off; `flip()` turns the board round for the other player. Start: 2 on the 24-point, 5 on the 13, 3 on the 8, 5 on the 6 (167 pips each).
+
+*Moves.* A single checker move with die d: from the bar first (entering on point 25 − d, if the opponent has fewer than two there); otherwise from any point to a point that is not blocked (two or more opponent checkers); landing on a single opponent checker hits it. Bearing off is allowed only when all 15 checkers are in the home board: with the exact die, or with a larger die from the highest occupied point. A play uses as many dice as possible (four for doubles). If only one die can be used, it must be the larger one when possible. Plays that reach the same position count once.
+
+*Checking the move generator* ("perft-style"). A second, deliberately simple generator (absolute board, a list of 15 checker positions per side, every rule checked directly, every die order tried) must produce the same set of resulting positions for every roll over hundreds of positions from random games. Depth-1 and depth-2 counts from the opening are recorded. Hand-made cases cover: a closed board (no entry), the larger-die rule, the bear-off rules, hitting from the bar, and doubles that cannot all be played.
+
+*Shots.* The number of the 36 rolls that hit a given blot is counted with the real move generator for the opponent, so blocked points and bar rules are taken into account. With an empty board in between it must give the classic table: 11, 12, 14, 15, 15, 17, 6, 6, 5, 3, 2, 3 for distances 1-12.
+
+*Bots* (`bots.py`):
+- **random:** any legal play.
+- **heuristic (0-ply):** the play whose resulting position scores best on a hand-written evaluation: pip lead, exposure of blots (the number of rolls that could hit each, weighted by how far back a hit sends it), made home points and the bar point, anchors, the longest prime, opponent checkers on the bar, and checkers off.
+- **1-ply:** for each candidate, average over the opponent's 21 distinct rolls of their best reply under the same evaluation.
+- **td:** a small neural network (198 inputs in Tesauro's encoding, 40 hidden units) trained by temporal-difference learning in self-play, with numpy. `edge-engine lab backgammon -o train=N` trains it and saves the weights under `~/.edge_engine/`.
+
+*Bear-off and the cube* (`bearoff.py`). With all checkers in the home board and no contact, each side's number of rolls to finish is a distribution, computed exactly by recursion (each roll is played to minimise expected rolls) and cached. P(the player on roll wins) = Σₙ P(on roll needs exactly n) × P(other needs more than n − 1). This is the standard one-sided method: exact under minimum-expected-rolls play, which is very close to the best play for winning chances.
+
+Cube decisions use the dead-cube, money-play maths (no gammons in a bear-off where both sides have borne off):
+- No double: 2p − 1.
+- Double: the opponent picks the smaller of take, 2(2p − 1), and drop, +1.
+- Take when the doubler's chance is at most 75% (the 25% take point).
+
+The explanations also cover why owning the cube moves the real decisions (the doubling window of roughly 70-78%). For longer races the **8-9-12 rule** is used: lead = (trailer's pips − leader's pips) / leader's pips; double at 8% or more, redouble at 9%, take up to 12%. These questions are marked as rule-of-thumb answers.
+
+*Modes.*
+- **play:** a game against a bot. Each of your plays is a decision scored against the engine's evaluation. That is the engine's opinion, not exact equity, and is labelled so. When you leave a blot you are asked how many rolls hit it (exact).
+- **shots:** positions from random games: pip counts, and how many rolls hit your blot.
+- **cube:** bear-off positions (exact winning chances; double? take?) and races (8-9-12 rule).
+
+**[DECISION] D-031: checker play is scored against the engine's evaluation, not exact equity.** Backgammon equity is not computable exactly in the middle game. The scores are honest about being an engine's opinion. The exact parts (shots, pip counts, bear-off chances, dead-cube decisions) carry the teaching.
+
+**[DECISION] D-032: the TD network is optional.** Training takes minutes in pure Python, so it is a lab command with saved weights, not part of the default game. Its test is marked slow.
+
+**[WORK] Phase 6 built.** Package `src/edge_engine/modules/backgammon/`: `board.py` (positions from the side to move, `flip`, pips, legal plays, results, a text board), `shots.py` (hitting rolls by the real move generator, the open-board table), `bots.py` (evaluation, random, greedy 0-ply, 1-ply, `play_game`), `bearoff.py` (exact one-sided distributions, win chances, dead-cube values, the 8-9-12 rule), `td.py` (196-40-1 network, gradient, TD(0) self-play training, save and load), `module.py` (`Backgammon`: play, shots, cube), `lab.py` (`edge-engine lab backgammon`, optional training). Terminal: long decision lists show "a number from 1 to n" and only the best play in the reveal. 282 tests pass in about 16 s, plus the slow ones (exhaustive five-card count, TD training); ruff clean.
+
+The "Done when" checks:
+- **Perft-style move counts:** the fast generator and an independent reference generator give identical sets of resulting positions for all 21 rolls in 250 positions from random games (5,250 cases), and for the opening (447 plays in total; 16 for 3-1). Hand-made positions check the closed board, the larger-die rule, the bear-off rules (including bearing off from the highest point with a larger die) and the use-both-dice rule.
+- **The shot table** 11, 12, 14, 15, 15, 17, 6, 6, 5, 3, 2, 3 is reproduced by the move generator; blocked points and bar entry are tested separately.
+- **The bot beats random:** the heuristic bot wins at least 30 of 40 games (it won 37 of 40 in the lab and about 90% in general). The TD network, trained for 1,000 self-play games, wins at least 32 of 40 (slow test).
+
+Other checks: bear-off expectations by hand (1.25 rolls for one checker on the 6-point; 4/36 to clear two from the 6-point in one roll), the bear-off win chance against a 3,000-game simulation under the same policy (within 4 SE), cube values (take and drop equal at 75%; with a dead cube, doubling beats not doubling exactly when p > 50%), the 8-9-12 rule, the TD gradient against finite differences, a TD update moves the estimate towards its target, and full sessions in all three modes.
+
+*Found while building:*
+- At a learning rate of 0.1 the TD network had not started to learn after 1,500 games; at 0.3 it learns within 1,000 for every seed tried, and beats the heuristic bot in 55-82% of games after 1,000-2,500. The default is 0.3.
+- A turn with exactly one legal play produced a "choice" of one option; forced plays are now made automatically.
+- Five of my own test expectations were wrong and the generator right: a roll stored as (1, 3), a bear-off with two legal results, a position where both dice could not be used, a 6-2 that still hits by playing the 2 first, and 14 (not 12) rolls entering from the bar onto a blot on the 3-point.
+
+*Left for later:* a live-cube model (cube ownership, gammons) and cube decisions inside play mode, Keith count, rollouts for middle-game positions, and a "which play leaves the fewest shots" question.
