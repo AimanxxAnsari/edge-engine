@@ -213,6 +213,8 @@ class Tutor:
 def _describe_error(e: Exception) -> str:
     """A short message for the player, without importing anthropic at module level."""
     name = type(e).__name__
+    if "authentication method" in str(e):  # no key or profile anywhere
+        return "no API key found: set ANTHROPIC_API_KEY or run `ant auth login`, then restart"
     messages = {
         "AuthenticationError": "no valid credentials (set ANTHROPIC_API_KEY or `ant auth login`)",
         "PermissionDeniedError": "these credentials cannot use this model",
