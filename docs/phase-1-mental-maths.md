@@ -35,24 +35,74 @@ Fractions can be typed as `11/12` or as a decimal. Percent answers are plain num
 
 ## 2. Techniques the explanations use
 
-**Addition: left to right.** 347 + 486 → 347 + 400 = 747, + 80 = 827, + 6 = 833. You keep one running total instead of carrying digits.
+Each technique is a small algebraic identity that turns one hard step into easier ones.
 
-**Subtraction: round and add back.** 503 − 278 → 503 − 280 = 223, then add back 2 → 225.
+**Addition: left to right.** Split the second number by place value and keep one running total:
 
-**Multiplication: split one factor.** 47 × 8 = 40 × 8 + 7 × 8 = 320 + 56 = 376. For a teen times a two-digit number: 14 × 37 = 10 × 37 + 4 × 37 = 370 + 148 = 518.
+```math
+347 + 486 = \bigl((347 + 400) + 80\bigr) + 6 = (747 + 80) + 6 = 827 + 6 = 833 .
+```
 
-**Decimals: drop the points.** 0.3 × 0.7 → 3 × 7 = 21, two decimal places → 0.21. For division, scale both numbers by the same power of 10: 4.8 ÷ 0.6 = 48 ÷ 6 = 8.
+**Subtraction: compensation.** For any convenient $`b'`$ (usually the next multiple of 10 above $`b`$):
 
-**Fractions: lowest common denominator.** 3/4 + 1/6 → LCD 12 → 9/12 + 2/12 = 11/12.
+```math
+a - b = (a - b') + (b' - b), \qquad 503 - 278 = (503 - 280) + 2 = 225 .
+```
 
-**Percent: build from 10%.** 10% of 240 is 24, 5% is 12, so 15% is 36. "18 is what % of 72" is 18/72 = 0.25 = 25%. Percentage change is always measured against the *starting* value: 80 → 100 is +25%, but 100 → 80 is −20%.
+**Multiplication: the distributive law.** Split one factor into tens and units:
 
-**Estimation: round, then adjust.** 347 × 62 → 350 × 62 = 21,700, then subtract 3 × 62 = 186 → 21,514. For division, find a round multiple first: 8214 ÷ 37 → 37 × 220 = 8140, and the remaining 74 is 2 more 37s → 222.
+```math
+(10t + u)\,c = 10t\,c + u\,c, \qquad 47 \times 8 = 320 + 56 = 376, \qquad 14 \times 37 = 370 + 148 = 518 .
+```
+
+**Decimals: scale to whole numbers.** Multiply whole numbers and count the decimal places; for division the scale cancels:
+
+```math
+x \cdot y = \frac{(10^m x)(10^n y)}{10^{m+n}} \;\Rightarrow\; 0.3 \times 0.7 = \frac{3 \times 7}{10^2} = 0.21,
+\qquad \frac{x}{y} = \frac{10^k x}{10^k y} \;\Rightarrow\; \frac{4.8}{0.6} = \frac{48}{6} = 8 .
+```
+
+**Fractions: the lowest common denominator** $`L = \operatorname{lcm}(b, d)`$:
+
+```math
+\frac{a}{b} + \frac{c}{d} = \frac{a\,(L/b) + c\,(L/d)}{L}, \qquad \frac34 + \frac16 = \frac{9 + 2}{12} = \frac{11}{12},
+\qquad \frac{a}{b} \cdot \frac{c}{d} = \frac{ac}{bd} \ \text{(cancel first)} .
+```
+
+**Percent: build from 10%.** $`p\%`$ of $`n`$ is $`\frac{p}{100} n`$; 10% is a shift of the decimal point, so 15% of 240 is $`24 + 12 = 36`$. "18 is what % of 72" is $`18/72 = 0.25 = 25\%`$.
+
+**Percentage change** is measured against the *starting* value $`x`$:
+
+```math
+\Delta\% = \frac{y - x}{x} \times 100, \qquad 80 \to 100: +25\%, \qquad 100 \to 80: -20\% .
+```
+
+It is not symmetric: a rise of $`r`$ followed by a fall of $`r`$ leaves $`(1+r)(1-r) = 1 - r^2 < 1`$ of the start.
+
+**Estimation: round, then adjust.** Round one factor to a convenient $`a'`$ and correct exactly:
+
+```math
+a \times b = a' b - (a' - a)\,b, \qquad 347 \times 62 = 350 \times 62 - 3 \times 62 = 21\,700 - 186 = 21\,514 .
+```
+
+Rounding *both* factors is riskier, because relative errors add:
+
+```math
+\frac{(a + \delta_a)(b + \delta_b)}{ab} \approx 1 + \frac{\delta_a}{a} + \frac{\delta_b}{b} .
+```
+
+For division, find a round multiple first: $`8214 \div 37`$: $`37 \times 220 = 8140`$, and the remaining $`74 = 2 \times 37`$, so the answer is 222.
 
 **Odds.**
-- "a to b against" means you win b times out of a + b: 5 to 2 against → 2/7 ≈ 28.6%.
-- A chance p is odds of (1 − p)/p to 1 against: 20% → 0.8/0.2 = 4 to 1.
-- **Pot odds:** facing a bet B into a pot P, you call B to win a final pot of P + 2B, so you need equity of at least B / (P + 2B). A half-pot bet (50 into 100) needs 50/200 = 25%; a pot-sized bet (100 into 100) needs 100/300 = 1/3.
+- "$`a`$ to $`b`$ against" means $`a`$ losses for every $`b`$ wins: $`P(\text{win}) = \dfrac{b}{a + b}`$. So 5 to 2 against is $`2/7 \approx 28.6\%`$.
+- A chance $`p`$ is odds of $`\dfrac{1 - p}{p}`$ to 1 against: 20% is $`0.8 / 0.2 = 4`$ to 1.
+- **Pot odds.** Facing a bet $`B`$ into a pot $`P`$, calling puts in $`B`$ to win a final pot of $`P + 2B`$. With equity $`q`$:
+
+```math
+\mathrm{EV}(\text{call}) = q\,(P + 2B) - B \ge 0 \iff q \ge \frac{B}{P + 2B} .
+```
+
+A half-pot bet ($`B = P/2`$) needs 25%; a pot-sized bet ($`B = P`$) needs $`\tfrac13`$.
 
 ---
 
@@ -66,32 +116,51 @@ Fractions can be typed as `11/12` or as a decimal. Percent answers are plain num
 
 **The clock counts answering time only:** the time between a question appearing and your answer. Reading the explanation and tip afterwards is free. An answer that finishes after time has run out is still saved (it is practice data), but it does not count towards the score.
 
-**When to skip in test mode.** With +1 / −1 scoring, answering is worth it when your chance of being right p satisfies p − (1 − p) > 0, which means p > 1/2. Skipping scores 0, but it also saves time for questions you can answer.
+**When to skip in test mode.** If you are right with probability $`p`$, answering is worth
 
-**Points per question.** Separately from the mode score, each correct answer earns `min(1, target / seconds)` points, so you get full points at or under the target time. Wrong and skipped answers earn 0.
+```math
+\mathbb{E}[\text{score}] = p \cdot (+1) + (1 - p) \cdot (-1) = 2p - 1,
+```
+
+and skipping is worth 0, so answer when $`p > \tfrac12`$. Time matters too: a skip that saves 20 seconds buys more questions you are confident about.
+
+**Points per question.** Separately from the mode score, a correct answer taking $`t`$ seconds against a target $`T`$ earns
+
+```math
+\text{points} = \min\left(1, \frac{T}{t}\right),
+```
+
+so you get full points at or under the target time. Wrong and skipped answers earn 0.
 
 ---
 
 ## 4. Adaptive sampling
 
-The next category is chosen at random, weighted towards your weak spots. For each category, with n answers, w of them wrong or skipped, total time s, and target time T:
+The next category is chosen at random, weighted towards your weak spots. For a category $`c`$ with $`n`$ answers, $`w`$ of them wrong or skipped, total time $`s`$ and target time $`T`$:
 
+```math
+e_c = \frac{w + 1}{n + 2}, \qquad
+r_c = \frac{(s + 2T)/(n + 2)}{T}, \qquad
+P(c) = 0.75\,\frac{r_c\,e_c}{\sum_{c'} r_{c'}\,e_{c'}} + \frac{0.25}{C},
 ```
-error rate   e = (w + 1) / (n + 2)
-time ratio   r = ((s + 2T) / (n + 2)) / T
-weight       raw = r × e
-probability  p = 0.75 × raw / (sum of raw) + 0.25 / (number of categories)
+
+where $`C`$ is the number of categories.
+
+**Why the +1, +2 and 2T?** Without them, a category with one lucky answer would have an error rate of 0 and never come up again. The error rate is a Bayesian estimate: put a uniform prior on the true error rate $`\theta`$, i.e. $`\theta \sim \mathrm{Beta}(1, 1)`$. After $`w`$ errors in $`n`$ answers the posterior is $`\mathrm{Beta}(w + 1,\ n - w + 1)`$, whose mean is
+
+```math
+\mathbb{E}[\theta \mid \text{data}] = \frac{w + 1}{n + 2}
 ```
 
-**Why the +1, +2 and 2T?** Without them, a category with one lucky answer would have an error rate of 0 and never come up again. The `(w + 1)/(n + 2)` form (Laplace's rule of succession) starts every category at 1/2 and moves towards the true rate as answers come in. In the same way, the time ratio starts as if you had already answered twice at exactly the target time.
+(Laplace's rule of succession). It starts every category at $`\tfrac12`$ and moves towards $`w/n`$ as answers come in. In the same way, the time ratio starts as if you had already answered twice at exactly the target time, so it begins at 1.
 
-**Why multiply?** A category where you are both slow *and* wrong should come up most. Being twice as slow or twice as error-prone each doubles the weight.
+**Why multiply?** A category where you are both slow *and* wrong should come up most. Being twice as slow or twice as error-prone each doubles the weight $`r_c e_c`$.
 
-**Why the 25% floor?** It keeps every category in the mix, so you don't lose skills you are already good at, and the estimates for strong categories keep getting updated.
+**Why the 25% floor?** It keeps every category in the mix ($`P(c) \ge 0.25/C`$), so you don't lose skills you are already good at, and the estimates for strong categories keep getting updated.
 
-**History.** Before a session, the stats from earlier sessions are loaded from the history database. Each category's history counts for at most 50 answers (scaled down proportionally), so a category you have improved on stops being over-weighted after a few dozen new answers.
+**History.** Before a session, the stats from earlier sessions are loaded from the history database. Each category's history counts for at most 50 answers: if there are $`n > 50`$, then $`n`$, $`w`$ and $`s`$ are all scaled by $`50/n`$. A category you have improved on stops being over-weighted after a few dozen new answers.
 
-Example: with fractions answered wrong and slowly, and everything else right and fast, the share of fraction questions climbs from 1/3 to above 60% within a few dozen questions (this is one of the tests).
+Example: with fractions answered wrong and slowly, and everything else right and fast, the share of fraction questions climbs from $`\tfrac13`$ to above 60% within a few dozen questions (this is one of the tests).
 
 ---
 
