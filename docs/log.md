@@ -308,3 +308,15 @@ The three parts telescope, so their sums add up to the total P&L exactly, which 
 **[DECISION] D-025: the quote is scored on fair value and width, not on profit.** Profit in a single game is mostly luck. Being centred on fair value and not too wide is the skill; the breakdown at the end shows how the economics played out.
 
 **[DECISION] D-026: interval answers can have a maximum width** (`params["max_width"]`), checked when typed.
+
+**[WORK] Phase 4 built.** Package `src/edge_engine/modules/market/`: `contract.py` (fair value, variance with the finite-population correction, the exact distribution for dice and cards, the informed trader's value), `bots.py` (noise and informed traders, the position limit, `run_round`, the exact P&L breakdown), `module.py` (`MarketMaking`), `lab.py` (`edge-engine lab market`). Terminal: interval answers with a maximum width and `@` as a separator (D-026). 231 tests (44 new), all passing in under 5 s; ruff clean.
+
+The "Done when" checks:
+- A full game against mixed flow: a scripted player who answers correctly and quotes fair ± sd/2 completes all four rounds with every answer right, and the summary shows the settlement, the trades and the breakdown.
+- The breakdown adds up exactly: over 25 random games (dice and cards, 40% informed, random off-centre quotes), spread + adverse + luck equals the total P&L as fractions, the total equals cash + position × settlement, noise trades have zero adverse selection, and noise + informed totals equal the whole.
+
+Other checks: the distribution, fair value and variance against brute-force enumeration (dice, and cards with some revealed); the three-card variance over all 22,100 hands equals 3·14·49/51; the research notes' figures (10.5 and 8.75 for 3 dice, 7 and 14 for one card, ≈ 40.4 for three cards); the informed value equals the conditional mean; at half-width sd/2 noise traders trade with probability 1/2 (simulated within 4 SE); informed traders never trade against a market containing their value and always trade against one that doesn't; the position limit holds.
+
+*Found while building:* my first informed-trader test said a peeked 6 makes 4 dice worth 17.5; it is 6 + 3·3.5 = 16.5, and the code was right. The lab's first, coarse grid of widths did not show informed traders widening the best market, so I added finer widths before stating it: the best half-width moves from 0.5 sd to about 0.6 sd for both dice and cards.
+
+*Left for later:* several related contracts at once (sum, maximum, product) with consistency checks, Fermi-estimate markets, quotes for more than one lot, and an inventory-aware "fair" quote to score skew against.

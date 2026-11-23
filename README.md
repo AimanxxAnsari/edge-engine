@@ -30,7 +30,7 @@ Questions can be point estimates ("what is your equity?"), decisions ("hit or st
 | 1 | Mental Maths Speed | Arithmetic speed and accuracy | Done |
 | 2 | Coin Flip with an Edge | Bet sizing, Kelly criterion, risk of ruin | Done |
 | 3 | Blackjack | Conditional probability, card counting | Done |
-| 4 | Market Making | Pricing, spreads, adverse selection | Planned |
+| 4 | Market Making | Pricing, spreads, adverse selection | Done |
 | 5 | Poker | Game theory, EV, ranges | Planned |
 | 6 | Backgammon | Dice probability, the doubling cube | Planned |
 | 7 | Chess | Search, evaluation, calculation | Planned |
@@ -65,7 +65,13 @@ edge-engine lab blackjack                   # chart, edge by count, deviation in
 ```
 
 ### Phase 4 — Market Making
-"Make me a market" on dice sums and hidden cards. You quote a bid and an ask, bots trade against you, information comes out one piece at a time and you re-quote. Some bots know more than you do. You learn fair value, spread width, skewing your inventory and adverse selection.
+"Make me a market" on the sum of dice or of cards dealt without replacement. You quote a bid and an ask, traders deal against you, the items are revealed one at a time, and you re-quote. Some traders have peeked at the next item. Fair value, variance (with the without-replacement correction) and the full distribution are computed exactly. At the end your P&L is split exactly into spread earned, losses to informed traders (adverse selection) and luck. The lab simulates P&L against quote width, showing why the spread has to widen when more traders are informed. See [the maths](docs/phase-4-market-making.md).
+
+```
+edge-engine play market                     # 4 dice, 30% informed traders
+edge-engine play market -o contract=cards   # card sum, no replacement
+edge-engine lab market                      # statistics and width economics
+```
 
 ### Phase 5 — Poker
 Moves from Kuhn poker (3 cards, fully solved) to Leduc Hold'em to heads-up Hold'em. A from-scratch CFR solver finds the optimal mixed strategies, and the trainer drills outs, equity, pot odds, minimum defence frequency and thinking in ranges.
@@ -96,6 +102,7 @@ edge-engine play mental                  # mental maths sprint
 edge-engine play kelly                   # bet sizing on a biased coin
 edge-engine lab kelly                    # Kelly tables and simulations
 edge-engine play blackjack               # basic strategy (mode=count to count cards)
+edge-engine play market                  # make a market on a sum of dice
 edge-engine play dice --seed 7           # play; the same seed replays the same session
 edge-engine stats                        # per-category results, slowest first
 pytest                                   # run the tests
@@ -114,13 +121,13 @@ src/edge_engine/
   loop.py       predict → reveal → score → log
   storage.py    SQLite history
   terminal.py   terminal front end
-  modules/      one file (or package) per game: dice (demo), mental, kelly, blackjack
+  modules/      one file (or package) per game: dice (demo), mental, kelly, blackjack, market
 docs/           plan, log and a maths explainer per phase
 ```
 
 ## Status
 
-Phases 0 to 3 (foundations, Mental Maths Speed, Coin Flip with an Edge, Blackjack) are done. Next is Phase 4, Market Making. Games run in the terminal first. Each game is built end to end (engine, trainer, tests, docs) before the next one starts. The maths behind each phase is explained in `docs/`, starting with [Phase 0](docs/phase-0-foundations.md), [Phase 1](docs/phase-1-mental-maths.md), [Phase 2](docs/phase-2-kelly.md) and [Phase 3](docs/phase-3-blackjack.md).
+Phases 0 to 4 (foundations, Mental Maths Speed, Coin Flip with an Edge, Blackjack, Market Making) are done. Next is Phase 5, Poker. Games run in the terminal first. Each game is built end to end (engine, trainer, tests, docs) before the next one starts. The maths behind each phase is explained in `docs/`, starting with [Phase 0](docs/phase-0-foundations.md), [Phase 1](docs/phase-1-mental-maths.md), [Phase 2](docs/phase-2-kelly.md), [Phase 3](docs/phase-3-blackjack.md) and [Phase 4](docs/phase-4-market-making.md).
 
 ## Licence
 

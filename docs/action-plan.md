@@ -104,6 +104,16 @@ Status (23 Nov 2026): **done** (branch `phase-3-blackjack`).
 
 **Done when:** a full round is playable against mixed flow, and the P&L breakdown adds up exactly.
 
+Status (23 Nov 2026): **done** (branch `phase-4-market-making`).
+- [x] Design entry in docs/log.md
+- [x] Engine + tests
+- [x] Trainer (questions / truth / explain)
+- [x] Terminal interface
+- [x] docs/ explainer (`docs/phase-4-market-making.md`)
+- [x] Pushed (local-brain check passed)
+- [x] Teaching PDF in local-brain/pdfs/
+- [x] Work-log entry in docs/log.md
+
 ## Phase 5 — Poker
 
 - Kuhn poker + our own CFR solver (must reach game value −1/18).
