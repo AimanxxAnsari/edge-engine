@@ -228,3 +228,10 @@ def test_cli_with_tutor(tmp_path, monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "Tutor on (claude-opus-5-5)" in out and "Count the sums" in out
     assert "1 answer(s) were assisted" in out and "Tutor (claude-opus-5-5): 1 question(s)" in out
+
+
+def test_missing_key_gives_a_plain_message():
+    err = TypeError('"Could not resolve authentication method. Expected one of api_key"')
+    tutor = Tutor("dice", client=FakeClient(error=err))
+    with pytest.raises(TutorError, match="no API key found: set ANTHROPIC_API_KEY"):
+        tutor.ask(Context(screen="", question="Q"), "hi", lambda s: None)
