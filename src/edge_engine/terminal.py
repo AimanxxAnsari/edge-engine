@@ -67,12 +67,17 @@ def parse_answer(question: Question, text: str) -> Any:
             return matches[0]
         raise ParseError(f"choose one of: {', '.join(question.choices)}")
     if kind is Kind.INTERVAL:
-        parts = [p for p in re.split(r"[\s;]+|\bto\b", text.strip()) if p]
+        parts = [p for p in re.split(r"[\s;@]+|\bto\b", text.strip()) if p]
         if len(parts) != 2:
             raise ParseError("give two numbers: low high")
         lo, hi = parse_number(parts[0]), parse_number(parts[1])
         if hi < lo:
             raise ParseError("the low end must not be above the high end")
+        width = params.get("max_width")
+        if width is not None and hi - lo > float(width) + 1e-9:
+            raise ParseError(f"at most {float(width):g} wide")
+        if width is not None and hi == lo:
+            raise ParseError("the bid must be below the ask")
         return (lo, hi)
     value = parse_number(text)
     if kind is Kind.PROBABILITY and not 0.0 <= value <= 1.0:
@@ -153,6 +158,8 @@ class TerminalUI:
             hint = " / ".join(f"{c} ({keys[c]})" if c in keys else c for c in question.choices)
         if question.params.get("unit") == "percent":
             hint = "a number, in %"
+        if question.kind is Kind.INTERVAL and "max_width" in question.params:
+            hint = f"bid ask, e.g. 9.5 11.5, at most {float(question.params['max_width']):g} apart"
         if question.params.get("unit") == "dollars" and "pct_base" in question.params:
             hint = "dollars: 5 on heads, -5 on tails, or 20% of your bankroll"
         extras = "s to skip, q to quit" if question.skippable else "q to quit"

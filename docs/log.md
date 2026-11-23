@@ -260,3 +260,51 @@ Other checks: the infinite-deck chart differs from the published one only at A2 
 - Two of my test expectations were wrong (95 tens left, not 94; a script that returned only the answer); the code was right.
 
 *Left for later:* exact composition-dependent EVs (drawing without replacement inside the recursion), the 4-hand resplit limit inside the EV, a bankroll curve with risk of ruin, and H17 deviation indices.
+
+---
+
+## 2026-11-23 — Phase 4: Market Making
+
+**[DESIGN] Phase 4 design.**
+
+*The contract.* A hidden quantity that settles at the sum of n items: dice (independent, 1–6) or cards (A = 1 … K = 13, dealt from one deck without replacement). Default: 4 items. The items are revealed one per round. Before each reveal you quote a two-sided market (bid, ask) and bots trade one lot at a time against it. After the last reveal the contract settles at the sum.
+
+*Exact statistics* (`contract.py`, all with `Fraction`):
+
+| | Dice, m hidden | Cards, m hidden from R unseen |
+|---|---|---|
+| Fair value | revealed + 3.5·m | revealed + m·μ, μ = mean of the unseen cards |
+| Variance | m · 35/12 | m·σ²·(R − m)/(R − 1), σ² = population variance of the unseen cards |
+| Distribution | convolution of m dice | dynamic programme over card values: ways to pick m cards with each sum, using C(count, k) per value, over C(R, m) |
+
+The unseen cards include the hidden items, since from the player's view they are a random sample of what is left. (R − m)/(R − 1) is the finite-population correction: drawing without replacement makes the sum vary less.
+
+*Bots* (one lot each; several per round; each is informed with probability α, default 0.3):
+- **Noise trader:** values the contract at fair + U(−sd, sd). Buys at your ask if its value is above it, sells at your bid if below.
+- **Informed trader:** has peeked at the next item to be revealed. Its value G = revealed + peeked + (m − 1)·(mean of the unseen cards without the peeked one). Trades only when your quote is wrong relative to G.
+- At your position limit (default ±5), the side that would push you past it is pulled.
+
+Against noise traders, a half-width h earns h per trade, and the chance of a trade on each side falls as (sd − h)/(2·sd), so very wide markets trade rarely. Informed traders trade exactly when you are wrong, so narrow markets lose to them. The best width is in between and grows with α. The lab measures this by simulation.
+
+*Quote rules.* Bid below ask, and at most 2 standard deviations wide (`-o max_width=` in sds), so you can't avoid trading by quoting an absurd market.
+
+*P&L breakdown (exact).* For trade i with sign s (+1 you bought, −1 you sold), price p, public fair value F at the time, trader's value G (= F for noise traders) and settlement S:
+
+```
+s·(S − p) = s·(F − p)  +  s·(G − F)  +  s·(S − G)
+  P&L         spread     adverse selection   luck
+```
+
+The three parts telescope, so their sums add up to the total P&L exactly, which is the phase's test.
+
+*Questions per round:* fair value (±0.05); standard deviation (±10%); from round 2, your P&L marked at the new fair value (±0.5); the quote (interval: right if fair value is inside your market; the error is an interval score with α = 0.5, so tight markets around fair value score best). Round 1 also asks for the chance the sum reaches a threshold (a binary option, priced exactly from the distribution, ±0.03).
+
+*End of round:* the settlement value, every trade (who, side, price, fair value, the informed trader's view) and the breakdown into spread, adverse selection and luck, including by trader type.
+
+*Lab:* exact statistics for dice and card sums, with and without replacement; simulated P&L per game against quote width and informed share, split into spread income and adverse selection.
+
+**[DECISION] D-024: P&L in exact fractions.** Prices are converted to `Fraction` (a typed 9.3 becomes 93/10), so the breakdown can be tested for exact equality rather than closeness.
+
+**[DECISION] D-025: the quote is scored on fair value and width, not on profit.** Profit in a single game is mostly luck. Being centred on fair value and not too wide is the skill; the breakdown at the end shows how the economics played out.
+
+**[DECISION] D-026: interval answers can have a maximum width** (`params["max_width"]`), checked when typed.
