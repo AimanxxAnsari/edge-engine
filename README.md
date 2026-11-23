@@ -133,6 +133,17 @@ pytest                                   # run the tests (--runslow for the long
 
 Answers can be typed as `0.25`, `1/4` or `25%`. Type `s` to skip (where allowed) and `q` to stop. Module options are passed with `-o key=value`. History is saved to `~/.edge_engine/history.db` (change it with `--db`, or turn it off with `--no-log`).
 
+## Training wheels
+
+Add `--wheels` to any game to learn it instead of being tested on it:
+
+```
+edge-engine play blackjack --wheels
+edge-engine play chess --wheels
+```
+
+Before each question you see the answer, how it is worked out and the technique tip. After you type an answer you see what it would score, plus game-specific feedback (your bet's growth rate, your quote's expected profit per trader, the shots your backgammon play leaves). Then you keep it or try another before anything is played. Nothing is timed, and practice is logged separately (as `<game>:wheels`), so it never changes your stats or the adaptive question mix.
+
 ## Project layout
 
 ```

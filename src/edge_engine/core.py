@@ -100,6 +100,14 @@ class GameModule(ABC):
         """Text shown when the session ends."""
         return ""
 
+    def lesson(self, state: Any, question: Question) -> str:
+        """Training wheels: extra teaching shown before the question. Optional."""
+        return ""
+
+    def judge(self, state: Any, question: Question, answer: Any) -> str:
+        """Training wheels: game-specific feedback on an answer before it counts. Optional."""
+        return ""
+
     def load_history(self, stats: list[CategoryStats]) -> None:
         """Receives this module's logged per-category stats before a session."""
         return None

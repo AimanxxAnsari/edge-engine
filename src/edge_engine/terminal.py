@@ -9,7 +9,7 @@ from fractions import Fraction
 from typing import Any
 
 from .core import Kind, Question
-from .loop import Quit, Turn
+from .loop import Aid, Quit, Turn
 
 QUIT_WORDS = {"q", "quit", "exit"}
 SKIP_WORDS = {"s", "skip"}
@@ -161,7 +161,39 @@ class TerminalUI:
         self.out("")
         self.out(text)
 
-    def ask(self, question: Question) -> tuple[Any, float]:
+    def _teach(self, question: Question, aid: Aid) -> None:
+        """Training wheels: show the answer and how to get it, before asking."""
+        if aid.truth is not None:
+            self.out(f"  learn: the answer is {format_truth(question, aid.truth)}")
+            if aid.explanation:
+                self.out(f"  learn: {aid.explanation}")
+        else:
+            self.out("  learn: this is a forecast; its outcome isn't known until it happens.")
+        if aid.lesson:
+            for line in aid.lesson.splitlines():
+                self.out(f"  learn: {line}")
+        if question.tip:
+            self.out(f"  learn: tip: {question.tip}")
+
+    def _confirm(self, question: Question, aid: Aid, answer: Any) -> bool:
+        """Show what the answer would score; True to keep it."""
+        score, note = aid.judge(answer)
+        if note:
+            for line in note.splitlines():
+                self.out(f"  check: {line}")
+        wrong = score is not None and score.correct is False
+        if wrong:
+            self.out(
+                f"  check: {format_answer(question, answer)} would be wrong "
+                f"(error {score.error:.4f}). Press Enter to keep it, or type another answer."
+            )
+            return False
+        if note:  # there is something to compare: let the player try other answers
+            self.out("  check: press Enter to keep it, or type another answer to compare.")
+            return False
+        return True
+
+    def ask(self, question: Question, aid: Aid | None = None) -> tuple[Any, float]:
         hint = HINTS.get(question.kind)
         if question.kind is Kind.DECISION:
             keys = {v: k for k, v in question.params.get("keys", {}).items()}
@@ -181,7 +213,10 @@ class TerminalUI:
         self.out(f"[{question.kind.value}] {question.prompt}")
         if hint:
             self.out(f"  ({hint}; {extras})")
+        if aid is not None:
+            self._teach(question, aid)
         start = self.clock()
+        pending = None  # training wheels: an answer waiting to be confirmed
         while True:
             try:
                 text = self.input("> ")
@@ -189,10 +224,15 @@ class TerminalUI:
                 raise Quit() from None
             if text.strip().lower() in QUIT_WORDS:
                 raise Quit()
+            if pending is not None and not text.strip():
+                return pending, self.clock() - start
             try:
                 answer = parse_answer(question, text)
             except ParseError as e:
                 self.out(f"  {e}")
+                continue
+            if aid is not None and not self._confirm(question, aid, answer):
+                pending = answer
                 continue
             return answer, self.clock() - start
 

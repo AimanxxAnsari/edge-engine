@@ -46,8 +46,15 @@ def _cmd_play(args: argparse.Namespace) -> int:
     config: dict[str, Any] = dict(args.option or [])
     if args.rounds is not None:
         config["rounds"] = args.rounds
+    if args.wheels:
+        config["wheels"] = True
     ui = TerminalUI()
     print(f"{module.title}  (seed {seed}; replay with --seed {seed})")
+    if args.wheels:
+        print(
+            "Training wheels: each answer is shown before you choose, and nothing counts "
+            f"towards your stats (logged separately as {module.name}:wheels)."
+        )
     store = None if args.no_log else Store(args.db)
     try:
         if store is not None:
@@ -58,7 +65,14 @@ def _cmd_play(args: argparse.Namespace) -> int:
             print(f"error: {e}")
             return 2
         res = run_session(
-            module, seed, ask=ui.ask, config=config, reveal=ui.reveal, show=ui.show, store=store
+            module,
+            seed,
+            ask=ui.ask,
+            config=config,
+            reveal=ui.reveal,
+            show=ui.show,
+            store=store,
+            wheels=args.wheels,
         )
     finally:
         if store is not None:
@@ -120,6 +134,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     play.add_argument("--db", default=DEFAULT_DB, help=f"history file (default {DEFAULT_DB})")
     play.add_argument("--no-log", action="store_true", help="do not save answers")
+    play.add_argument(
+        "--wheels",
+        action="store_true",
+        help="training wheels: see each answer before choosing; practice is logged separately",
+    )
     play.set_defaults(func=_cmd_play)
 
     lab = sub.add_parser("lab", help="tables and simulations, no input needed")
