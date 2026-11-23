@@ -112,7 +112,7 @@ Requires Python 3.10 or later and numpy.
 git clone https://github.com/AimanxxAnsari/edge-engine.git
 cd edge-engine
 python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
+pip install -e ".[dev]"          # add ,tutor for the Claude tutor
 git config core.hooksPath githooks
 ```
 
@@ -144,6 +144,19 @@ edge-engine play chess --wheels
 
 Before each question you see the answer, how it is worked out and the technique tip. After you type an answer you see what it would score, plus game-specific feedback (your bet's growth rate, your quote's expected profit per trader, the shots your backgammon play leaves). Then you keep it or try another before anything is played. Nothing is timed, and practice is logged separately (as `<game>:wheels`), so it never changes your stats or the adaptive question mix.
 
+## Claude tutor
+
+Add `--tutor` to any game, then type `?` or `? your question` at any prompt:
+
+```
+pip install -e ".[tutor]"
+export ANTHROPIC_API_KEY=...         # or: ant auth login
+edge-engine play poker --tutor
+edge-engine play blackjack --wheels --tutor
+```
+
+Claude explains the numbers the game's own engines computed and is told never to invent its own. In training wheels it explains everything, including the answer. In scored modes it is never sent the answer before you commit: it hints at the method, and the answer is marked *assisted*. Requests go to Anthropic's API and contain the screen, the question and the game's public explainer from `docs/`. The session summary shows the token use and an estimated cost. Without the package or a key, every game works as before. Details: [docs/phase-8-learning.md](docs/phase-8-learning.md).
+
 ## Project layout
 
 ```
@@ -155,6 +168,7 @@ src/edge_engine/
   loop.py       predict → reveal → score → log
   storage.py    SQLite history
   terminal.py   terminal front end
+  tutor.py      the optional Claude tutor
   modules/      one file (or package) per game: dice (demo), mental, kelly, blackjack, market,
                 poker, backgammon, chess
 docs/           plan, log and a maths explainer per phase
@@ -162,7 +176,7 @@ docs/           plan, log and a maths explainer per phase
 
 ## Status
 
-All eight phases are done: foundations, Mental Maths Speed, Coin Flip with an Edge, Blackjack, Market Making, Poker, Backgammon and Chess. Everything runs in the terminal. The maths behind each phase is explained in `docs/`:
+All phases are done: foundations, Mental Maths Speed, Coin Flip with an Edge, Blackjack, Market Making, Poker, Backgammon and Chess, plus Phase 8, learning modes (training wheels and the Claude tutor). Everything runs in the terminal. The maths behind each phase is explained in `docs/`:
 
 | Phase | Explainer |
 |---|---|
@@ -174,6 +188,7 @@ All eight phases are done: foundations, Mental Maths Speed, Coin Flip with an Ed
 | 5 | [Poker](docs/phase-5-poker.md) |
 | 6 | [Backgammon](docs/phase-6-backgammon.md) |
 | 7 | [Chess](docs/phase-7-chess.md) |
+| 8 | [Learning modes: training wheels and the tutor](docs/phase-8-learning.md) |
 
 Decisions and work done are recorded in [docs/log.md](docs/log.md), and the plan with each phase's "done when" checks in [docs/action-plan.md](docs/action-plan.md).
 

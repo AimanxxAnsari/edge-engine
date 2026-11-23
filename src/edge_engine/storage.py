@@ -37,7 +37,8 @@ CREATE TABLE IF NOT EXISTS answers (
     points      REAL NOT NULL,
     correct     INTEGER,
     seconds     REAL NOT NULL,
-    created_at  TEXT NOT NULL
+    created_at  TEXT NOT NULL,
+    assisted    INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS answers_session ON answers(session_id);
 """
@@ -67,6 +68,10 @@ class Store:
         self.conn = sqlite3.connect(str(path))
         self.conn.execute("PRAGMA foreign_keys = ON")
         self.conn.executescript(SCHEMA)
+        columns = {row[1] for row in self.conn.execute("PRAGMA table_info(answers)")}
+        if "assisted" not in columns:  # history files from before the tutor
+            self.conn.execute("ALTER TABLE answers ADD COLUMN assisted INTEGER NOT NULL DEFAULT 0")
+            self.conn.commit()
 
     def __enter__(self) -> Store:
         return self
@@ -98,12 +103,13 @@ class Store:
         truth: Any,
         score: Score,
         seconds: float,
+        assisted: bool = False,
     ) -> None:
         correct = None if score.correct is None else int(score.correct)
         self.conn.execute(
             """INSERT INTO answers (session_id, question_id, kind, category, prompt, answer,
-                   truth, error, points, correct, seconds, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                   truth, error, points, correct, seconds, created_at, assisted)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 session_id,
                 question.id,
@@ -117,6 +123,7 @@ class Store:
                 correct,
                 seconds,
                 _now(),
+                int(assisted),
             ),
         )
         self.conn.commit()

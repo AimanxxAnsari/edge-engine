@@ -172,6 +172,26 @@ Status (23 Nov 2026): **done** (branch `phase-7-chess`).
 
 ---
 
+## Phase 8 — Learning modes (added 23 Nov 2026)
+
+- Training wheels (`--wheels`) for every game: the answer, explanation and tip before each question; answers judged before they count; practice logged separately.
+- Game hooks `lesson()` and `judge()`; game-specific feedback for the coin flip, market making and backgammon.
+- Claude tutor (`--tutor`): explains the engines' exact numbers. In scored modes it never sees the answer before you commit, and assisted answers are marked.
+
+**Done when:** every game runs with `--wheels`; the tutor never receives the answer in scored modes before the commit (tested); assisted answers are stored; the tutor is optional (games work without it) and its tests never call the API.
+
+Status (23 Nov 2026): **done** (8a: branch `phase-8-training-wheels`; 8b: branch `phase-8b-tutor`).
+- [x] Design entry in docs/log.md
+- [x] Engine + tests
+- [x] Trainer (questions / truth / explain)
+- [x] Terminal interface
+- [x] docs/ explainer (`docs/phase-8-learning.md`)
+- [x] Pushed (local-brain check passed)
+- [x] Teaching PDF in local-brain/pdfs/
+- [x] Work-log entry in docs/log.md
+
+---
+
 ## Phase checklist template
 
 - [ ] Design entry in docs/log.md

@@ -43,8 +43,8 @@ def test_ui_reprompts_and_times():
     times = iter([10.0, 13.5])
     out = []
     ui = TerminalUI(lambda _: next(inputs), out.append, lambda: next(times))
-    answer, seconds = ui.ask(POINT)
-    assert answer == 0.5 and seconds == 3.5
+    answer, seconds, assisted = ui.ask(POINT)
+    assert answer == 0.5 and seconds == 3.5 and not assisted
     assert any("not a number" in line for line in out)
 
 

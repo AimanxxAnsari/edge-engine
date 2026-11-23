@@ -13,6 +13,7 @@ from .modules import LABS, REGISTRY, get_module
 from .rng import Rng
 from .storage import DEFAULT_DB, Store
 from .terminal import TerminalUI
+from .tutor import DEFAULT_MODEL, Tutor
 
 
 def _cmd_list(args: argparse.Namespace) -> int:
@@ -48,12 +49,25 @@ def _cmd_play(args: argparse.Namespace) -> int:
         config["rounds"] = args.rounds
     if args.wheels:
         config["wheels"] = True
-    ui = TerminalUI()
+    tutor = None
+    if args.tutor:
+        try:
+            import anthropic  # noqa: F401
+        except ImportError:
+            print('error: the tutor needs the anthropic package: pip install -e ".[tutor]"')
+            return 2
+        tutor = Tutor(module.name, model=args.tutor_model)
+    ui = TerminalUI(tutor=tutor)
     print(f"{module.title}  (seed {seed}; replay with --seed {seed})")
     if args.wheels:
         print(
             "Training wheels: each answer is shown before you choose, and nothing counts "
             f"towards your stats (logged separately as {module.name}:wheels)."
+        )
+    if tutor is not None:
+        print(
+            f"Tutor on ({tutor.model}): type ? or ? <question> at any prompt. In scored modes "
+            "it hints without giving the answer, and the answer is marked assisted."
         )
     store = None if args.no_log else Store(args.db)
     try:
@@ -82,6 +96,10 @@ def _cmd_play(args: argparse.Namespace) -> int:
     if res.summary:
         print("\n" + res.summary)
     print(f"\nSession {status}: {n} answers, {res.points:.2f} points out of {n}.")
+    if res.assisted:
+        print(f"{res.assisted} answer(s) were assisted by the tutor.")
+    if tutor is not None and tutor.summary():
+        print(tutor.summary())
     return 0
 
 
@@ -134,6 +152,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     play.add_argument("--db", default=DEFAULT_DB, help=f"history file (default {DEFAULT_DB})")
     play.add_argument("--no-log", action="store_true", help="do not save answers")
+    play.add_argument(
+        "--tutor",
+        action="store_true",
+        help="Claude tutor: type ? at any prompt (needs the tutor extra and an API key)",
+    )
+    play.add_argument("--tutor-model", default=DEFAULT_MODEL, help="Claude model for the tutor")
     play.add_argument(
         "--wheels",
         action="store_true",
