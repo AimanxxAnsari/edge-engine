@@ -102,19 +102,34 @@ class Chess(GameModule):
         )
         if mode == "drills":
             s.drill = self._new_drill(s)
-        elif s.board.side != s.hero:
-            self._engine_move(s)
+        else:
+            self._engine_move(s)  # the engine's first move, or a forced one of yours
         return s
 
     # --- play --------------------------------------------------------------------------
 
     def _engine_move(self, s: ChessState) -> None:
-        r = self.engine.search(s.board, s.depth)
-        san = s.board.san(r.move)
-        s.board.make(r.move)
-        s.sans.append(san)
-        s.log.append(f"Engine plays {san} (depth {r.depth}, {r.nodes:,} nodes).")
-        self._check_end(s)
+        """Play on until it is your turn with a real choice (or the game is over).
+
+        The engine moves on its turns; on yours, a position with exactly one legal move
+        is played for you, since a choice of one is not a question.
+        """
+        while not s.done:
+            if s.board.side == s.hero:
+                moves = s.board.legal_moves()
+                if len(moves) != 1:
+                    return
+                forced = s.board.san(moves[0])
+                s.board.make(moves[0])
+                s.sans.append(forced)
+                s.log.append(f"You have only one legal move: {forced}.")
+            else:
+                r = self.engine.search(s.board, s.depth)
+                san = s.board.san(r.move)
+                s.board.make(r.move)
+                s.sans.append(san)
+                s.log.append(f"Engine plays {san} (depth {r.depth}, {r.nodes:,} nodes).")
+            self._check_end(s)
 
     def _check_end(self, s: ChessState) -> None:
         outcome = s.board.outcome()

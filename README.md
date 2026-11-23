@@ -194,7 +194,7 @@ Before each question you see the answer, how it is worked out and the technique 
 
 ## Claude tutor
 
-Add `--tutor` to any game, then type `?` or `? your question` at any prompt:
+The tutor is part of the terminal games. Add `--tutor` to any game, then type `?` or `? your question` at any prompt:
 
 ```
 pip install -e ".[tutor]"
@@ -205,6 +205,12 @@ edge-engine play blackjack --wheels --tutor
 
 Claude explains the numbers the game's own engines computed and is told never to invent its own. In training wheels it explains everything, including the answer. In scored modes it is never sent the answer before you commit: it hints at the method, and the answer is marked *assisted*. Requests go to Anthropic's API and contain the screen, the question and the game's public explainer from `docs/`. The session summary shows the token use and an estimated cost. Without the package or a key, every game works as before. Details: [docs/phase-8-learning.md](docs/phase-8-learning.md).
 
+## Web app (in progress)
+
+A browser version with real visuals is being built beside the terminal games, to run locally on your own machine (free; a static GitHub Pages version may follow): card tables, chess and backgammon boards you can click, the Kelly bankroll and fan charts, and a market-making order ladder. The terminal games stay as they are, and both use the same engines and history. The Claude tutor stays in the terminal only.
+
+The groundwork is done: a game can now be played one answer at a time (`Session` in `loop.py`), which a web page needs, and the terminal plays through the same code.
+
 ## Project layout
 
 ```
@@ -213,7 +219,7 @@ src/edge_engine/
   prob.py       n-choose-k, binomial, hypergeometric, Monte Carlo with standard error
   scoring.py    Brier score, interval score, EV lost, speed score
   core.py       question kinds and the module contract
-  loop.py       predict → reveal → score → log
+  loop.py       predict → reveal → score → log, as a step-by-step Session
   storage.py    SQLite history
   terminal.py   terminal front end
   tutor.py      the optional Claude tutor
