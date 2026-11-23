@@ -556,3 +556,5 @@ The equivalence checks:
 - **Session behaviour:** the question order of a round, forecasts revealed only after the action, a finished session refusing further answers, and quitting dropping an unresolved forecast.
 
 *Found while testing:* chess crashed whenever the player had exactly one legal move (for example a single way out of check), because a choice of one is not a valid question; this was true before the refactor too. Forced moves are now played automatically and noted ("You have only one legal move: Kxa2."), both during a game and at its start, as backgammon already did. A test starts from a position whose only legal move is Kxa2.
+
+**[DECISION] D-042: the Claude tutor stays in the terminal games; the web app goes straight to real visuals.** No API or hook for the tutor in the web app. The web app skips a text-only first version and builds proper visuals game by game (tables, boards, charts). Decided by the user on 23 Nov 2026; the README's new "Web app (in progress)" section says so.
