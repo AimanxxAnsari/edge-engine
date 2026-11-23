@@ -29,7 +29,7 @@ Questions can be point estimates ("what is your equity?"), decisions ("hit or st
 | 0 | Foundations (+ dice demo) | Seeded RNG, probability, scoring, logging | Done |
 | 1 | Mental Maths Speed | Arithmetic speed and accuracy | Done |
 | 2 | Coin Flip with an Edge | Bet sizing, Kelly criterion, risk of ruin | Done |
-| 3 | Blackjack | Conditional probability, card counting | Planned |
+| 3 | Blackjack | Conditional probability, card counting | Done |
 | 4 | Market Making | Pricing, spreads, adverse selection | Planned |
 | 5 | Poker | Game theory, EV, ranges | Planned |
 | 6 | Backgammon | Dice probability, the doubling cube | Planned |
@@ -55,7 +55,14 @@ edge-engine lab kelly                           # no input needed
 ```
 
 ### Phase 3 — Blackjack
-Configurable rules (number of decks, S17/H17, 3:2 or 6:5 payouts) and basic strategy computed from exact expected values. Includes a Hi-Lo counting trainer with running and true count, count-based strategy changes, and a review of how much EV each mistake cost.
+Configurable rules (number of decks, S17/H17, 3:2 or 6:5 payouts, double after split, surrender). Basic strategy is computed by a from-scratch EV solver, and the computed 6-deck chart matches the published chart in every cell for both S17 and H17. Count mode asks for the Hi-Lo running count, true count and bet before each hand, and scores decisions against the EVs of the cards actually left, so count-based plays (the Illustrious 18 and Fab 4) count as right. A drill mode trains fast counting. Every decision is scored by the EV it gave up, and the session ends with your most expensive mistakes. See [the maths](docs/phase-3-blackjack.md).
+
+```
+edge-engine play blackjack                  # basic strategy
+edge-engine play blackjack -o mode=count    # count, bet, play
+edge-engine play blackjack -o mode=drill    # counting drill
+edge-engine lab blackjack                   # chart, edge by count, deviation indices
+```
 
 ### Phase 4 — Market Making
 "Make me a market" on dice sums and hidden cards. You quote a bid and an ask, bots trade against you, information comes out one piece at a time and you re-quote. Some bots know more than you do. You learn fair value, spread width, skewing your inventory and adverse selection.
@@ -88,6 +95,7 @@ edge-engine list                         # available modules
 edge-engine play mental                  # mental maths sprint
 edge-engine play kelly                   # bet sizing on a biased coin
 edge-engine lab kelly                    # Kelly tables and simulations
+edge-engine play blackjack               # basic strategy (mode=count to count cards)
 edge-engine play dice --seed 7           # play; the same seed replays the same session
 edge-engine stats                        # per-category results, slowest first
 pytest                                   # run the tests
@@ -106,13 +114,13 @@ src/edge_engine/
   loop.py       predict → reveal → score → log
   storage.py    SQLite history
   terminal.py   terminal front end
-  modules/      one file (or package) per game: dice (demo), mental, kelly
+  modules/      one file (or package) per game: dice (demo), mental, kelly, blackjack
 docs/           plan, log and a maths explainer per phase
 ```
 
 ## Status
 
-Phases 0 (foundations), 1 (Mental Maths Speed) and 2 (Coin Flip with an Edge) are done. Next is Phase 3, Blackjack. Games run in the terminal first. Each game is built end to end (engine, trainer, tests, docs) before the next one starts. The maths behind each phase is explained in `docs/`, starting with [Phase 0](docs/phase-0-foundations.md), [Phase 1](docs/phase-1-mental-maths.md) and [Phase 2](docs/phase-2-kelly.md).
+Phases 0 to 3 (foundations, Mental Maths Speed, Coin Flip with an Edge, Blackjack) are done. Next is Phase 4, Market Making. Games run in the terminal first. Each game is built end to end (engine, trainer, tests, docs) before the next one starts. The maths behind each phase is explained in `docs/`, starting with [Phase 0](docs/phase-0-foundations.md), [Phase 1](docs/phase-1-mental-maths.md), [Phase 2](docs/phase-2-kelly.md) and [Phase 3](docs/phase-3-blackjack.md).
 
 ## Licence
 

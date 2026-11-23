@@ -55,6 +55,9 @@ def parse_answer(question: Question, text: str) -> Any:
     kind = question.kind
     if kind is Kind.DECISION:
         s = text.strip().lower()
+        keys = params.get("keys", {})
+        if s in keys:
+            return keys[s]
         choices = [c.lower() for c in question.choices]
         if s.isdigit() and 1 <= int(s) <= len(choices):
             return question.choices[int(s) - 1]
@@ -146,7 +149,8 @@ class TerminalUI:
     def ask(self, question: Question) -> tuple[Any, float]:
         hint = HINTS.get(question.kind)
         if question.kind is Kind.DECISION:
-            hint = " / ".join(question.choices)
+            keys = {v: k for k, v in question.params.get("keys", {}).items()}
+            hint = " / ".join(f"{c} ({keys[c]})" if c in keys else c for c in question.choices)
         if question.params.get("unit") == "percent":
             hint = "a number, in %"
         if question.params.get("unit") == "dollars" and "pct_base" in question.params:

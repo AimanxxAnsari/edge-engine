@@ -85,6 +85,16 @@ Status (22 Nov 2026): **done** (branch `phase-2-kelly`).
 
 **Done when:** the computed basic strategy matches a published chart, and a full deck counts to 0 (property test).
 
+Status (23 Nov 2026): **done** (branch `phase-3-blackjack`).
+- [x] Design entry in docs/log.md
+- [x] Engine + tests
+- [x] Trainer (questions / truth / explain)
+- [x] Terminal interface
+- [x] docs/ explainer (`docs/phase-3-blackjack.md`)
+- [x] Pushed (local-brain check passed)
+- [x] Teaching PDF in local-brain/pdfs/
+- [x] Work-log entry in docs/log.md
+
 ## Phase 4 — Market Making
 
 - Dice/card contracts; exact mean/variance (including the without-replacement correction).
