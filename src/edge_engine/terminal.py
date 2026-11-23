@@ -54,8 +54,12 @@ def parse_answer(question: Question, text: str) -> Any:
         return _check_range(question, value)
     kind = question.kind
     if kind is Kind.DECISION:
-        s = text.strip().lower()
         keys = params.get("keys", {})
+        if text.strip() in keys:  # exact first: 'bxc3' and 'Bxc3' are different moves
+            return keys[text.strip()]
+        if text.strip() in question.choices:
+            return text.strip()
+        s = text.strip().lower()
         if s in keys:
             return keys[s]
         choices = [c.lower() for c in question.choices]
@@ -65,6 +69,8 @@ def parse_answer(question: Question, text: str) -> Any:
         matches = [c for c, low in pairs if s and low.startswith(s)]
         if len(matches) == 1:
             return matches[0]
+        if "hint" in params:
+            raise ParseError(f"{text.strip()!r} is not one of the choices ({params['hint']})")
         if len(question.choices) > 6:
             raise ParseError(f"choose a number from 1 to {len(question.choices)}, or the moves")
         raise ParseError(f"choose one of: {', '.join(question.choices)}")
@@ -162,6 +168,8 @@ class TerminalUI:
             hint = " / ".join(f"{c} ({keys[c]})" if c in keys else c for c in question.choices)
             if len(question.choices) > 6:
                 hint = f"a number from 1 to {len(question.choices)}, or the moves"
+        if "hint" in question.params:
+            hint = question.params["hint"]
         if question.params.get("unit") == "percent":
             hint = "a number, in %"
         if question.kind is Kind.INTERVAL and "max_width" in question.params:
