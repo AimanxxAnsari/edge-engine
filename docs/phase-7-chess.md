@@ -20,7 +20,7 @@ The board is a **0x88** grid: 128 squares numbered
 \text{square} = 16 \cdot \text{rank} + \text{file}, \qquad 0 \le \text{rank}, \text{file} \le 7 .
 ```
 
-The real board is the 64 squares where $`\text{square} \mathbin{\&} \mathtt{0x88} = 0`$: bit 3 is set for files 8-15 and bit 7 for ranks past the board, so "did that step leave the board?" is a single bit test. A knight on h1 (square 7) stepping $`+18`$ lands on 25, which has bit 3 set: off the board. Pieces are signed numbers (White positive).
+The real board is the 64 squares where $`\text{square} \ \&\  \mathtt{0x88} = 0`$: bit 3 is set for files 8-15 and bit 7 for ranks past the board, so "did that step leave the board?" is a single bit test. A knight on h1 (square 7) stepping $`+18`$ lands on 25, which has bit 3 set: off the board. Pieces are signed numbers (White positive).
 
 Legal moves are found in two steps:
 1. generate **pseudo-legal** moves: pawn pushes and double pushes, captures, en passant, promotions to all four pieces, knight and king steps, sliding rays, and castling when the squares between are empty and the king's path is not attacked;
@@ -29,7 +29,7 @@ Legal moves are found in two steps:
 **Perft** counts every legal move sequence to a fixed depth:
 
 ```math
-\operatorname{perft}(s, 0) = 1, \qquad \operatorname{perft}(s, d) = \sum_{m \in \operatorname{legal}(s)} \operatorname{perft}(s \cdot m,\ d - 1) .
+\mathrm{perft}(s, 0) = 1, \qquad \mathrm{perft}(s, d) = \sum_{m \in \mathrm{legal}(s)} \mathrm{perft}(s \cdot m,\ d - 1) .
 ```
 
 Published counts for standard test positions make it the standard correctness test: any bug in castling, en passant, promotions or pins changes the totals. All six standard positions match:
@@ -60,7 +60,7 @@ XOR is its own inverse, so a move from $`q_1`$ to $`q_2`$ updates it in a few st
 **Negamax with alpha-beta.** Chess is zero-sum, so "my best score" is minus "your best score" one move later:
 
 ```math
-v(s) = \max_{m \in \operatorname{legal}(s)} \bigl(-v(s \cdot m)\bigr) .
+v(s) = \max_{m \in \mathrm{legal}(s)} \bigl(-v(s \cdot m)\bigr) .
 ```
 
 Alpha-beta passes a window $`(\alpha, \beta)`$: $`\alpha`$ is the score the side to move is already guaranteed, $`\beta`$ the most the opponent will allow. As soon as a move scores $`\ge \beta`$ the opponent would avoid this position, so the remaining moves are skipped (a cutoff). With branching factor $`b`$ and depth $`d`$, perfect move ordering cuts the number of positions from $`b^d`$ to about

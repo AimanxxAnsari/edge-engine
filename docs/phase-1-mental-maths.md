@@ -62,7 +62,7 @@ x \cdot y = \frac{(10^m x)(10^n y)}{10^{m+n}} \;\Rightarrow\; 0.3 \times 0.7 = \
 \qquad \frac{x}{y} = \frac{10^k x}{10^k y} \;\Rightarrow\; \frac{4.8}{0.6} = \frac{48}{6} = 8 .
 ```
 
-**Fractions: the lowest common denominator** $`L = \operatorname{lcm}(b, d)`$:
+**Fractions: the lowest common denominator** $`L = \mathrm{lcm}(b, d)`$:
 
 ```math
 \frac{a}{b} + \frac{c}{d} = \frac{a\,(L/b) + c\,(L/d)}{L}, \qquad \frac34 + \frac16 = \frac{9 + 2}{12} = \frac{11}{12},
