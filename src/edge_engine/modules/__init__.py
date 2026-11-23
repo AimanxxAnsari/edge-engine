@@ -7,6 +7,8 @@ from typing import Any
 
 from ..core import GameModule
 from ..rng import Rng
+from .blackjack import Blackjack
+from .blackjack import lab as blackjack_lab
 from .dice import DiceDemo
 from .kelly import CoinFlip
 from .kelly import lab as kelly_lab
@@ -16,11 +18,13 @@ REGISTRY: dict[str, type[GameModule]] = {
     DiceDemo.name: DiceDemo,
     MentalMaths.name: MentalMaths,
     CoinFlip.name: CoinFlip,
+    Blackjack.name: Blackjack,
 }
 
 # Non-interactive analyses: name -> run(config, rng) -> text
 LABS: dict[str, Callable[[Mapping[str, Any], Rng], str]] = {
     "kelly": kelly_lab.run,
+    "blackjack": blackjack_lab.run,
 }
 
 
