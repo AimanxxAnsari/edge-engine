@@ -110,7 +110,7 @@ def run_ui(inputs, question, aid):
     lines = []
     it = iter(inputs)
     ui = TerminalUI(lambda _: next(it), lines.append, clock=lambda: 0.0)
-    answer, _ = ui.ask(question, aid=aid)
+    answer, _, _ = ui.ask(question, aid=aid)
     return answer, "\n".join(lines)
 
 

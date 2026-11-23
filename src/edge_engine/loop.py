@@ -24,6 +24,7 @@ class Turn:
     seconds: float
     score: Score
     explanation: str
+    assisted: bool = False  # the tutor helped before the answer (scored modes)
 
 
 @dataclass
@@ -40,6 +41,10 @@ class SessionResult:
     def points(self) -> float:
         return sum(t.score.points for t in self.turns)
 
+    @property
+    def assisted(self) -> int:
+        return sum(t.assisted for t in self.turns)
+
 
 @dataclass(frozen=True)
 class Aid:
@@ -51,7 +56,8 @@ class Aid:
     judge: Callable[[Any], tuple[Score | None, str]]  # answer -> (would-be score, feedback)
 
 
-AskFn = Callable[..., tuple[Any, float]]  # ask(question[, aid=Aid]) -> (answer, seconds)
+# ask(question[, aid=Aid]) -> (answer, seconds) or (answer, seconds, assisted)
+AskFn = Callable[..., tuple]
 ActFn = Callable[[Any, list[str]], str]
 RevealFn = Callable[[Turn], None]
 ShowFn = Callable[[str], None]
@@ -94,14 +100,14 @@ def run_session(
     session_id = store.start_session(log_name, seed, config) if store else None
     out = SessionResult(module=module.name, seed=seed, session_id=session_id)
 
-    def finish(q: Question, answer: Any, seconds: float, at_state: Any) -> Any:
+    def finish(q: Question, answer: Any, seconds: float, at_state: Any, assisted: bool) -> Any:
         """Score, log and reveal one answer; return the state after module.observe."""
         truth = module.truth(at_state, q)
         score = score_answer(q, answer, truth, seconds)
-        turn = Turn(q, answer, truth, seconds, score, module.explain(at_state, q))
+        turn = Turn(q, answer, truth, seconds, score, module.explain(at_state, q), assisted)
         out.turns.append(turn)
         if store is not None and session_id is not None:
-            store.log_answer(session_id, q, answer, truth, score, seconds)
+            store.log_answer(session_id, q, answer, truth, score, seconds, assisted)
         if reveal is not None:
             reveal(turn)
         return module.observe(at_state, q, answer, score, seconds)
@@ -124,21 +130,20 @@ def run_session(
                 text = module.describe(state)
                 if text:
                     show(text)
-            pending: list[tuple[Question, Any, float]] = []
+            pending: list[tuple[Question, Any, float, bool]] = []
             for q in module.questions(state):
-                if wheels:
-                    answer, seconds = ask(q, aid=make_aid(q, state))
-                else:
-                    answer, seconds = ask(q)
+                got = ask(q, aid=make_aid(q, state)) if wheels else ask(q)
+                answer, seconds = got[0], got[1]
+                assisted = bool(got[2]) if len(got) > 2 else False
                 if q.kind is Kind.PROBABILITY:
-                    pending.append((q, answer, seconds))
+                    pending.append((q, answer, seconds, assisted))
                 else:
-                    state = finish(q, answer, seconds, state)
+                    state = finish(q, answer, seconds, state, assisted)
             if module.is_terminal(state):  # observe() may end the game (e.g. time is up)
                 break
             state = module.apply(state, act(state, module.legal_actions(state)))
-            for q, answer, seconds in pending:
-                state = finish(q, answer, seconds, state)
+            for q, answer, seconds, assisted in pending:
+                state = finish(q, answer, seconds, state, assisted)
     except Quit:
         out.completed = False  # forecasts still pending are dropped, unscored
     finally:

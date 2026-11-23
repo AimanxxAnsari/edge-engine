@@ -10,6 +10,7 @@ from typing import Any
 
 from .core import Kind, Question
 from .loop import Aid, Quit, Turn
+from .tutor import Context, Tutor, TutorError
 
 QUIT_WORDS = {"q", "quit", "exit"}
 SKIP_WORDS = {"s", "skip"}
@@ -151,15 +152,48 @@ class TerminalUI:
         input_fn: Callable[[str], str] | None = None,
         output_fn: Callable[[str], None] | None = None,
         clock: Callable[[], float] = time.perf_counter,
+        tutor: Tutor | None = None,
+        write: Callable[[str], None] | None = None,
     ) -> None:
         # Look up input/print at call time, so they can be swapped (e.g. in tests).
         self.input = input_fn or (lambda prompt: input(prompt))
         self.out = output_fn or (lambda text: print(text))
+        self.write = write or (lambda text: print(text, end="", flush=True))
         self.clock = clock
+        self.tutor = tutor
+        self.screen = ""  # the last position shown, for the tutor
 
     def show(self, text: str) -> None:
+        self.screen = text
         self.out("")
         self.out(text)
+
+    def _help(self, question: Question, aid: Aid | None, text: str) -> bool:
+        """Ask the tutor. Returns True if it answered."""
+        if self.tutor is None:
+            self.out("  (the tutor is off: add --tutor to use it)")
+            return False
+        answer = None
+        explanation = lesson = ""
+        if aid is not None and aid.truth is not None:
+            answer = format_truth(question, aid.truth)
+            explanation, lesson = aid.explanation, aid.lesson
+        context = Context(
+            screen=self.screen,
+            question=question.prompt,
+            choices=question.choices,
+            answer=answer,
+            explanation=explanation,
+            lesson=lesson,
+        )
+        self.write("  tutor: ")
+        try:
+            self.tutor.ask(context, text or "Give me a hint.", self.write)
+        except TutorError as e:
+            self.out(f"(unavailable: {e})")
+            return False
+        self.out("")
+        return True
 
     def _teach(self, question: Question, aid: Aid) -> None:
         """Training wheels: show the answer and how to get it, before asking."""
@@ -193,7 +227,7 @@ class TerminalUI:
             return False
         return True
 
-    def ask(self, question: Question, aid: Aid | None = None) -> tuple[Any, float]:
+    def ask(self, question: Question, aid: Aid | None = None) -> tuple[Any, float, bool]:
         hint = HINTS.get(question.kind)
         if question.kind is Kind.DECISION:
             keys = {v: k for k, v in question.params.get("keys", {}).items()}
@@ -209,6 +243,8 @@ class TerminalUI:
         if question.params.get("unit") == "dollars" and "pct_base" in question.params:
             hint = "dollars: 5 on heads, -5 on tails, or 20% of your bankroll"
         extras = "s to skip, q to quit" if question.skippable else "q to quit"
+        if self.tutor is not None:
+            extras = "? to ask the tutor, " + extras
         self.out("")
         self.out(f"[{question.kind.value}] {question.prompt}")
         if hint:
@@ -217,6 +253,7 @@ class TerminalUI:
             self._teach(question, aid)
         start = self.clock()
         pending = None  # training wheels: an answer waiting to be confirmed
+        assisted = False  # the tutor helped before a scored answer
         while True:
             try:
                 text = self.input("> ")
@@ -224,8 +261,12 @@ class TerminalUI:
                 raise Quit() from None
             if text.strip().lower() in QUIT_WORDS:
                 raise Quit()
+            if text.strip().startswith("?"):
+                helped = self._help(question, aid, text.strip()[1:].strip())
+                assisted = assisted or (helped and aid is None)
+                continue
             if pending is not None and not text.strip():
-                return pending, self.clock() - start
+                return pending, self.clock() - start, assisted
             try:
                 answer = parse_answer(question, text)
             except ParseError as e:
@@ -234,7 +275,7 @@ class TerminalUI:
             if aid is not None and not self._confirm(question, aid, answer):
                 pending = answer
                 continue
-            return answer, self.clock() - start
+            return answer, self.clock() - start, assisted
 
     def reveal(self, turn: Turn) -> None:
         q, s = turn.question, turn.score
@@ -247,3 +288,10 @@ class TerminalUI:
         self.out(f"  {turn.explanation}")
         if q.tip and show_tip(turn):
             self.out(f"  tip: {q.tip}")
+        if turn.assisted:
+            self.out("  (assisted: the tutor helped before this answer)")
+        if self.tutor is not None:
+            self.tutor.note_reveal(
+                f"{q.prompt} | player answered {format_answer(q, turn.answer)} | answer "
+                f"{format_truth(q, turn.truth)} | {turn.explanation}"
+            )

@@ -501,3 +501,21 @@ The other games use the generic aid, whose explanations already carry the useful
 Checks: the aid carries the truth for every question except forecasts; wheels sessions are logged separately and do not reach the adaptive history; a sprint under wheels runs the fixed 20 questions; the market judge matches the formula by hand (noise profit h(sd − h)/sd at a centred half-width h; informed loss −4/6 per trader against a ±1 quote on 4 dice); the terminal shows the lesson first and supports keeping, changing and comparing answers; the CLI flag and stats rows.
 
 *Found while trying it:* a correct answer with useful feedback (a market quote's economics) was accepted immediately, so you could not compare widths. Answers with feedback now always offer "keep or try another".
+
+**[DESIGN] 8b, the Claude tutor.** `--tutor` on `edge-engine play`; type `?` or `? question` at any prompt.
+- **Grounding:** each request carries the screen, the question and its choices, and recent reveals. In training wheels it also carries the exact answer, explanation and lesson. The system prompt (cached) holds the tutor's rules and the game's public `docs/` explainer. The rules say every number must come from the game data or be simple arithmetic on it.
+- **Scored modes:** the answer is never sent before the player commits ("Answer: HIDDEN"); the tutor is told to hint at the method; an answer given after a hint is marked *assisted* in the reveal, the summary and the history file (new `assisted` column, added automatically to old history files).
+- **API:** the official `anthropic` SDK as an optional extra (`.[tutor]`, CI installs it); `claude-opus-5-5` by default (`--tutor-model`), effort low, streaming, the system prompt cached, the server-side refusal fallback on (`fallbacks: "default"`), a short rolling conversation (12 exchanges). Token use and an estimated cost are shown at the end. Credentials come from `ANTHROPIC_API_KEY` or an `ant auth login` profile and are never logged.
+- **Failures never break a game:** missing package, credentials, network or a refusal show a one-line message and the game carries on.
+
+**[DECISION] D-037: the tutor is a teaching layer, not a brain.** All truths stay in the from-scratch engines (D-003); Claude explains them. That keeps the project's rule intact and keeps the tutor's numbers right.
+
+**[DECISION] D-038: tests never call the API.** A fake client records each request, so the tests check exactly what would be sent (e.g. no answer in scored mode) at no cost.
+
+**[WORK] 8b built.** `src/edge_engine/tutor.py` (context, rules, request, streaming, usage and cost, error messages); the loop accepts an optional "assisted" flag from the ask function and stores it; the terminal handles `?`, passes reveals to the tutor and marks assisted answers; CLI flags `--tutor` and `--tutor-model`; `docs/phase-8-learning.md`. 331 tests pass (10 new); ruff clean.
+
+Checks (fake client): in a scored session the request says the answer is hidden and does not contain it, the answer is marked assisted (in the results and in the database), and later answers are not; in training wheels the exact answer and explanation are sent and nothing is marked assisted; the request uses `claude-opus-5-5`, low effort, the refusal fallback and a cached system prompt that holds the rules and the docs explainer and nothing from `local-brain/`; the conversation and reveals carry over to the next question; cost arithmetic against the price table; credential and network errors and refusals give a message without breaking the game or marking the answer assisted; the tutor-off message; old history files gain the new column; the CLI end to end.
+
+*Not checked here:* a live call to the API. No credentials were available in this environment, so the first real run will be the user's own; the request shape follows the current SDK (2.12) and its documentation.
+
+*Found while building:* adding the assisted flag changed `ask` to return three values, which broke four existing tests that unpacked two; they now unpack three. My first fake client streamed words without their spaces; the tutor code was right.
