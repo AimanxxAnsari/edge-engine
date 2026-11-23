@@ -207,7 +207,7 @@ Claude explains the numbers the game's own engines computed and is told never to
 
 ## Web app (in progress)
 
-A browser version with real visuals is being built beside the terminal games, for personal use: run locally, or on a small AWS setup (pages on S3 and CloudFront, the Python server on EC2): card tables, chess and backgammon boards you can click, the Kelly bankroll and fan charts, and a market-making order ladder. The terminal games stay as they are, and both use the same engines and history. The Claude tutor stays in the terminal only.
+A browser version with real visuals is being built beside the terminal games, to run locally on your own machine (free; a static GitHub Pages version may follow): card tables, chess and backgammon boards you can click, the Kelly bankroll and fan charts, and a market-making order ladder. The terminal games stay as they are, and both use the same engines and history. The Claude tutor stays in the terminal only.
 
 The groundwork is done: a game can now be played one answer at a time (`Session` in `loop.py`), which a web page needs, and the terminal plays through the same code.
 
