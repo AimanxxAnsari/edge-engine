@@ -531,3 +531,28 @@ Checks (fake client): in a scored session the request says the answer is hidden 
 *Checked while writing:* every worked number in the new formulas against the code or a direct calculation (the poker hand counts all reproduce 2,598,960 exactly; the backgammon shot formula gives 11, 12, 14, 15, 15, 17; the evaluation weights and the 6,200 phase constant match the code; the market-judge formula matches `quote_economics`).
 
 **[WORK] Maths fix: no `\operatorname`.** GitHub's maths renderer refuses `\operatorname` ("The following macros are not allowed: operatorname"), which the explainers used 22 times (Var, SD, Cov, lcm, median, perft, legal, rotl, sig). All are now `\mathrm{…}`, which renders the same, and the one `\mathbin` became plain spacing. Reported by the user.
+
+---
+
+## 2026-11-23 — Phase 9: a local web app beside the terminal
+
+**[DECISION] D-040: add a web front end, local only, and keep the terminal.** Both are front ends on the same engines, history file, training wheels and tutor. It runs on the user's own machine (`edge-engine serve`, bound to localhost); no hosting, no accounts, and the tutor's API key stays in the server process. A web framework is allowed: the "from scratch" rule (D-003) covers the engines, solvers and truth functions, not the user interface.
+
+**[DESIGN] 9a, the resumable session.** `run_session` ran a whole session in one call and blocked inside `ask()` for each answer; a web request can't wait like that. The play loop is now a `Session` object that the caller steps through:
+- `session.screen` and `session.screen_id`: the description of the current game state, and a counter that changes whenever a new state begins, so a front end knows when to redraw.
+- `session.question`: the question waiting for an answer (`None` once the game is over); `session.aid()` gives the training-wheels aid for it.
+- `session.answer(answer, seconds, assisted)`: score and log the answer, let the game observe it, and move on (taking the game's action once all of a state's questions are answered); returns the turns revealed by this answer. That is usually one, none for a forecast (its outcome comes later), or several when an action resolves earlier forecasts.
+- `session.quit()` and `session.finish()`: stop early, close the logged session, and produce the `SessionResult`.
+
+The semantics are exactly those of the old loop: a state's questions are fetched once when the state begins, forecasts are scored after the next action, and if `observe` ends the game during a batch, the game stops once that batch is answered, before any action. `run_session` is now a short loop over `Session` with the same signature, so the terminal and every existing test are unchanged.
+
+**[DECISION] D-041: prove the refactor changes nothing.** The existing tests must pass without edits, and a new test plays every game twice with the same seed and scripted answers, through `run_session` and step by step through `Session`, and requires identical turns, results and summaries.
+
+**[WORK] 9a built: the resumable session.** `loop.py` now has a `Session` class (screen and screen id, current question, training-wheels aid, `answer()` returning the revealed turns, `quit()`, `finish()`), and `run_session` is a short loop over it with the same signature and behaviour. Nothing else in the terminal, CLI or games changed for the refactor. 354 tests pass (22 new): all 332 existing tests unchanged, and the new `tests/test_session.py`.
+
+The equivalence checks:
+- **Permanent test:** 17 game configurations covering every game and mode, plus training wheels with logging, are played twice with the same seed and scripted answers (mostly right, every third wrong, forecasts mixed), through `run_session` and step by step through `Session`. They must give identical turns (question, answer, truth, score, explanation), reveal order, screens, results and summaries, and identical rows in the history file.
+- **One-off check against the code before the refactor:** the old loop, loaded from `main`, and the new `Session` gave identical results in 51 of 51 runs (the 17 configurations × 3 seeds).
+- **Session behaviour:** the question order of a round, forecasts revealed only after the action, a finished session refusing further answers, and quitting dropping an unresolved forecast.
+
+*Found while testing:* chess crashed whenever the player had exactly one legal move (for example a single way out of check), because a choice of one is not a valid question; this was true before the refactor too. Forced moves are now played automatically and noted ("You have only one legal move: Kxa2."), both during a game and at its start, as backgammon already did. A test starts from a position whose only legal move is Kxa2.
