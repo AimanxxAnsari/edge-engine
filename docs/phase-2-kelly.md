@@ -79,7 +79,7 @@ Your final wealth depends only on the number of wins $`k \sim \mathrm{Binomial}(
 ```math
 \mathbb{E}[W_n] = W_0\,\bigl(1 + f(2p - 1)\bigr)^n,
 \qquad
-\operatorname{median}(W_n) = W_0\,(1+f)^{k_{\text{med}}}(1-f)^{n - k_{\text{med}}},
+\mathrm{median}(W_n) = W_0\,(1+f)^{k_{\text{med}}}(1-f)^{n - k_{\text{med}}},
 ```
 
 ```math

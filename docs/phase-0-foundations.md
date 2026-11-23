@@ -11,7 +11,7 @@ Every game draws its randomness from `Rng`, so a session can be replayed from it
 **State and step.** The state is four 64-bit words $`s_0, s_1, s_2, s_3`$. Each step outputs
 
 ```math
-\text{result} = \operatorname{rotl}(5\,s_1,\ 7) \times 9 \pmod{2^{64}}
+\text{result} = \mathrm{rotl}(5\,s_1,\ 7) \times 9 \pmod{2^{64}}
 ```
 
 and then mixes the state with shifts, XORs and one rotation:
@@ -81,7 +81,7 @@ By induction $`r_i = \binom{n-k+i}{i}`$, which is an integer, so the division is
 **Binomial.** $`X`$ counts the successes in $`n`$ independent trials, each a success with probability $`p`$:
 
 ```math
-P(X = k) = \binom{n}{k} p^k (1-p)^{n-k}, \qquad \mathbb{E}[X] = np, \qquad \operatorname{Var}(X) = np(1-p).
+P(X = k) = \binom{n}{k} p^k (1-p)^{n-k}, \qquad \mathbb{E}[X] = np, \qquad \mathrm{Var}(X) = np(1-p).
 ```
 
 Example: four heads in ten flips of a 60% coin is $`\binom{10}{4}\,0.6^4\,0.4^6 = 210 \times 0.6^4 \times 0.4^6 \approx 0.111`$.
@@ -98,7 +98,7 @@ The mean is the same as with replacement. The variance is smaller:
 
 ```math
 \mathbb{E}[X] = n\,\frac{K}{N}, \qquad
-\operatorname{Var}(X) = n\,\frac{K}{N}\left(1 - \frac{K}{N}\right) \underbrace{\frac{N-n}{N-1}}_{\text{finite-population correction}} .
+\mathrm{Var}(X) = n\,\frac{K}{N}\left(1 - \frac{K}{N}\right) \underbrace{\frac{N-n}{N-1}}_{\text{finite-population correction}} .
 ```
 
 Drawing without replacement means each draw tells you something about the rest, so totals vary less. At $`n = N`$ (drawing everything) the correction is 0: there is no randomness left. This matters for card games and for market-making on hidden cards.
@@ -118,7 +118,7 @@ When an exact answer is too hard, simulate: run the trial $`n`$ times and averag
 $`\bar X`$ is itself random. If one trial has standard deviation $`\sigma`$, estimated by the sample standard deviation $`s`$, its spread is the **standard error**
 
 ```math
-\operatorname{SD}(\bar X) = \frac{\sigma}{\sqrt{n}} \approx \mathrm{SE} = \frac{s}{\sqrt n}, \qquad
+\mathrm{SD}(\bar X) = \frac{\sigma}{\sqrt{n}} \approx \mathrm{SE} = \frac{s}{\sqrt n}, \qquad
 \text{95\% interval} \approx \bar X \pm 1.96\,\mathrm{SE} .
 ```
 

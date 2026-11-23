@@ -32,13 +32,13 @@ In the first round you price a binary option: the chance the sum reaches some le
 ```math
 \mathbb{E}[X] = \frac{1 + \dots + 6}{6} = 3.5, \qquad
 \mathbb{E}[X^2] = \frac{91}{6}, \qquad
-\operatorname{Var}(X) = \frac{91}{6} - \frac{49}{4} = \frac{35}{12} \approx 2.92 .
+\mathrm{Var}(X) = \frac{91}{6} - \frac{49}{4} = \frac{35}{12} \approx 2.92 .
 ```
 
 Independent dice add means and variances, so with $`m`$ dice still hidden
 
 ```math
-F = \text{(sum shown)} + 3.5\,m, \qquad \operatorname{Var}(S \mid \text{shown}) = \frac{35}{12}\,m .
+F = \text{(sum shown)} + 3.5\,m, \qquad \mathrm{Var}(S \mid \text{shown}) = \frac{35}{12}\,m .
 ```
 
 The sum of 4 dice has fair value 14 and sd $`\sqrt{35/3} \approx 3.42`$. If the first die shows a 6, fair value jumps to $`6 + 3 \times 3.5 = 16.5`$, and the sd falls to $`\sqrt{35/4} \approx 2.96`$.
@@ -47,14 +47,14 @@ The sum of 4 dice has fair value 14 and sd $`\sqrt{35/3} \approx 3.42`$. If the 
 
 ```math
 F = \text{(sum shown)} + m\,\mu, \qquad
-\operatorname{Var} = m\,\sigma^2\,\frac{R - m}{R - 1} .
+\mathrm{Var} = m\,\sigma^2\,\frac{R - m}{R - 1} .
 ```
 
-**Where the correction comes from.** For draws without replacement, $`\operatorname{Var}(\sum X_i) = m\sigma^2 + m(m-1)\,\gamma`$, where $`\gamma = \operatorname{Cov}(X_i, X_j)`$. Drawing all $`R`$ cards gives a fixed total, so the variance must be zero at $`m = R`$:
+**Where the correction comes from.** For draws without replacement, $`\mathrm{Var}(\sum X_i) = m\sigma^2 + m(m-1)\,\gamma`$, where $`\gamma = \mathrm{Cov}(X_i, X_j)`$. Drawing all $`R`$ cards gives a fixed total, so the variance must be zero at $`m = R`$:
 
 ```math
 0 = R\sigma^2 + R(R-1)\,\gamma \;\Longrightarrow\; \gamma = -\frac{\sigma^2}{R - 1} \;\Longrightarrow\;
-\operatorname{Var} = m\sigma^2\left(1 - \frac{m-1}{R-1}\right) = m\sigma^2\,\frac{R - m}{R - 1} .
+\mathrm{Var} = m\sigma^2\left(1 - \frac{m-1}{R-1}\right) = m\sigma^2\,\frac{R - m}{R - 1} .
 ```
 
 The covariance is negative: a high card makes the next one slightly more likely to be low, so the sum varies less than $`m`$ independent draws would. Three cards from a full deck: $`3 \times 14 \times \tfrac{49}{51} \approx 40.4`$ instead of 42.
@@ -141,7 +141,7 @@ The three parts **add up exactly**, because the middle terms cancel. Summed over
 |---|---|---|
 | Chance the sum reaches a level (round 1) | $`P(S \ge x)`$ from the exact distribution | within 0.03 |
 | Fair value | $`\mathbb{E}[S \mid \text{shown}]`$ | within 0.05 |
-| Standard deviation | $`\sqrt{\operatorname{Var}(S \mid \text{shown})}`$ | within 10% |
+| Standard deviation | $`\sqrt{\mathrm{Var}(S \mid \text{shown})}`$ | within 10% |
 | P&L marked at fair value | cash + position $`\times F`$ | within 0.5 |
 | Your market | fair value $`F`$ | $`b \le F \le a`$; tighter scores better |
 

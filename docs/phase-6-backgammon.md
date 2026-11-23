@@ -90,7 +90,7 @@ where a blot on point $`p_b`$ costs more the further back a hit would send it. F
 The `td` bot is a small version of Tesauro's TD-Gammon (1992). The network takes the position $`s`$ after a play, encoded as 196 numbers $`x(s)`$ (4 inputs per point per player, plus bar and borne-off counts). It has one hidden layer of 40 sigmoid units and outputs the chance that the side that just played wins:
 
 ```math
-V(s) = \operatorname{sig}\bigl(w_2 \cdot \operatorname{sig}(W_1 x(s) + b_1) + b_2\bigr), \qquad \operatorname{sig}(z) = \frac{1}{1 + e^{-z}} .
+V(s) = \mathrm{sig}\bigl(w_2 \cdot \mathrm{sig}(W_1 x(s) + b_1) + b_2\bigr), \qquad \mathrm{sig}(z) = \frac{1}{1 + e^{-z}} .
 ```
 
 It plays both sides against itself, always choosing the play with the highest $`V`$. After each of its plays, its previous estimate $`V(s)`$ is moved towards its new one $`V(s')`$ (temporal difference, TD(0)):
