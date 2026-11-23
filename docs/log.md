@@ -456,3 +456,19 @@ Each position of the game is searched once. A move's "before" is the best score 
 **[DECISION] D-033: 0x88 mailbox rather than bitboards.** Python ints make bitboards possible, but 0x88 is easier to read and to get right, and perft correctness matters more than speed here.
 
 **[DECISION] D-034: the engine is weak and says so.** Pure-Python search reaches about 3-4 plies in a few seconds, far below Stockfish. Reviews and move scores are labelled as this engine's opinion at the stated depth. Stockfish is never bundled (D-003).
+
+**[WORK] Phase 7 built.** Package `src/edge_engine/modules/chess/`: `board.py` (0x88 board, pseudo-legal generation, make/undo stack, Zobrist hashing, legal moves and captures, outcomes, FEN, SAN in and out, PGN reader and writer, perft), `engine.py` (evaluation with piece-square tables and a blended king table; negamax alpha-beta, iterative deepening, transposition table, quiescence, check extension, move ordering; per-move scoring), `review.py` (Lichess win% and accuracy, move classes, game review and its table, the Opera Game), `module.py` (`Chess`: play and drills), `lab.py` (`edge-engine lab chess`). Terminal: a typed answer that exactly matches a choice or key wins before case-insensitive matching (so `bxc3` and `Bxc3` stay different), and questions can give their own hint. 313 tests pass in about 22 s, plus 8 slow ones; ruff clean.
+
+The "Done when" checks:
+- **Perft:** all six standard positions match the published counts at depths 1-3 in every run and at depth 4 in the slow test (start, Kiwipete, positions 3-6; about 10.5 million positions in 23 s). They matched on the first run.
+- **Legal, sensible games:** the engine finds every built-in mate in one (each puzzle is also checked exhaustively to have a mate), a mate in two with two rooks, and wins a hanging queen. In games against random moves every engine move is legal, and it is ahead by at least 5 points of material, or has won, by move 30.
+- **PGN review:** the Opera Game parses (33 plies, queenside castling, checks and mate) and is reviewed; the final Rd8# and the queen sacrifice Qb8+ are classed Best; a PGN file given with `-o pgn=` is reviewed by the lab.
+
+Other checks: incremental Zobrist hash against recomputation and undo after every legal move in 15 random games; FEN round trips; SAN round trips (SAN and UCI) for every legal move in 10 random positions; castling SAN, promotions, file and rank disambiguation; en passant removes the right pawn; castling rights after a rook move; no castling through an attacked square; checkmate, stalemate, insufficient material, fifty-move rule, threefold repetition; PGN with comments, variations and annotation marks; the Lichess formulas (50% at 0 cp, symmetry, 63.6 and 40.0 accuracy for 10- and 20-point drops) and the class thresholds; full trainer sessions.
+
+*Found while building:*
+- Before the check extension, the engine could not see a mate just past its horizon: before 16.Qb8+ in the Opera Game it gave 45% instead of a forced mate, because mates were only detected inside the main search. Searching one more ply when in check fixed it, at almost no cost.
+- Typing a move that wasn't legal gave the message "choose a number from 1 to 28", which is wrong for chess; questions can now supply their own hint and error text.
+- One test position of mine was illegal (Black already in check with White to move); the code was right.
+
+*Left for later:* a stronger engine (null-move pruning, late-move reductions, better evaluation), "find the best move" puzzles from your own blunders, an evaluation-graph view, and the Lichess game-accuracy weighting.

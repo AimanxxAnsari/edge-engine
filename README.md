@@ -33,7 +33,7 @@ Questions can be point estimates ("what is your equity?"), decisions ("hit or st
 | 4 | Market Making | Pricing, spreads, adverse selection | Done |
 | 5 | Poker | Game theory, EV, ranges | Done |
 | 6 | Backgammon | Dice probability, the doubling cube | Done |
-| 7 | Chess | Search, evaluation, calculation | Planned |
+| 7 | Chess | Search, evaluation, calculation | Done |
 
 ### Phase 1 — Mental Maths Speed
 Timed arithmetic in the style of trading-firm tests: two-minute sprints, an 80-questions-in-8-minutes test with −1 for wrong answers, and untimed practice. Nine categories: addition, subtraction, multiplication, division, decimals, fractions, percentages, estimation and odds (including pot odds). The question mix adapts to the categories you are slowest on or get wrong most often, using your history. Every answer gets a worked explanation, plus a technique tip when you were wrong or slow. See [how it works](docs/phase-1-mental-maths.md).
@@ -94,7 +94,13 @@ edge-engine lab backgammon -o train=1500     # train the TD network
 ```
 
 ### Phase 7 — Chess
-A from-scratch engine with move generation, alpha-beta search and position evaluation, plus a game-review mode that converts evaluations to win% and rates each move. No hidden information or dice, so it covers calculation and evaluation.
+A from-scratch move generator (0x88 board, make/undo, Zobrist hashing, FEN, SAN, PGN) that matches the published perft counts for the six standard test positions. An alpha-beta engine with iterative deepening, a transposition table, quiescence search, a check extension and piece-square evaluation. Play it, with every move scored as win% lost. Drill board vision and mate-in-one puzzles with exact answers. Review any PGN with the Lichess win% and accuracy formulas and openly documented move classes. See [the maths](docs/phase-7-chess.md).
+
+```
+edge-engine play chess                    # play White against the engine
+edge-engine play chess -o mode=drills     # board vision and mate in one
+edge-engine lab chess -o pgn=game.pgn     # perft, engine checks, game review
+```
 
 ---
 
@@ -119,6 +125,7 @@ edge-engine play blackjack               # basic strategy (mode=count to count c
 edge-engine play market                  # make a market on a sum of dice
 edge-engine play poker                   # Kuhn poker (mode=leduc, mode=spots)
 edge-engine play backgammon              # a game of backgammon (mode=shots, mode=cube)
+edge-engine play chess                   # play the chess engine (mode=drills)
 edge-engine play dice --seed 7           # play; the same seed replays the same session
 edge-engine stats                        # per-category results, slowest first
 pytest                                   # run the tests (--runslow for the long ones)
@@ -138,13 +145,26 @@ src/edge_engine/
   storage.py    SQLite history
   terminal.py   terminal front end
   modules/      one file (or package) per game: dice (demo), mental, kelly, blackjack, market,
-                poker, backgammon
+                poker, backgammon, chess
 docs/           plan, log and a maths explainer per phase
 ```
 
 ## Status
 
-Phases 0 to 6 (foundations, Mental Maths Speed, Coin Flip with an Edge, Blackjack, Market Making, Poker, Backgammon) are done. Next is Phase 7, Chess. Games run in the terminal first. Each game is built end to end (engine, trainer, tests, docs) before the next one starts. The maths behind each phase is explained in `docs/`, starting with [Phase 0](docs/phase-0-foundations.md), [Phase 1](docs/phase-1-mental-maths.md), [Phase 2](docs/phase-2-kelly.md), [Phase 3](docs/phase-3-blackjack.md), [Phase 4](docs/phase-4-market-making.md), [Phase 5](docs/phase-5-poker.md) and [Phase 6](docs/phase-6-backgammon.md).
+All eight phases are done: foundations, Mental Maths Speed, Coin Flip with an Edge, Blackjack, Market Making, Poker, Backgammon and Chess. Everything runs in the terminal. The maths behind each phase is explained in `docs/`:
+
+| Phase | Explainer |
+|---|---|
+| 0 | [Foundations](docs/phase-0-foundations.md) |
+| 1 | [Mental Maths Speed](docs/phase-1-mental-maths.md) |
+| 2 | [Coin Flip with an Edge](docs/phase-2-kelly.md) |
+| 3 | [Blackjack](docs/phase-3-blackjack.md) |
+| 4 | [Market Making](docs/phase-4-market-making.md) |
+| 5 | [Poker](docs/phase-5-poker.md) |
+| 6 | [Backgammon](docs/phase-6-backgammon.md) |
+| 7 | [Chess](docs/phase-7-chess.md) |
+
+Decisions and work done are recorded in [docs/log.md](docs/log.md), and the plan with each phase's "done when" checks in [docs/action-plan.md](docs/action-plan.md).
 
 ## Licence
 

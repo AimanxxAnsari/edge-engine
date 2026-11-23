@@ -160,6 +160,16 @@ Status (23 Nov 2026): **done** (branch `phase-6-backgammon`).
 
 **Done when:** perft numbers match the standard reference positions, and the engine plays legal, sensible games and reviews a PGN.
 
+Status (23 Nov 2026): **done** (branch `phase-7-chess`).
+- [x] Design entry in docs/log.md
+- [x] Engine + tests
+- [x] Trainer (questions / truth / explain)
+- [x] Terminal interface
+- [x] docs/ explainer (`docs/phase-7-chess.md`)
+- [x] Pushed (local-brain check passed)
+- [x] Teaching PDF in local-brain/pdfs/
+- [x] Work-log entry in docs/log.md
+
 ---
 
 ## Phase checklist template
