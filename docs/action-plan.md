@@ -123,6 +123,16 @@ Status (23 Nov 2026): **done** (branch `phase-4-market-making`).
 
 **Done when:** CFR converges on Kuhn and Leduc, the evaluator passes exhaustive or known-count tests, and equity agrees with exact enumeration.
 
+Status (23 Nov 2026): **done** (branch `phase-5-poker`), with Hold'em as a spot trainer; full multi-street Hold'em against rule-based bots is deferred (D-027).
+- [x] Design entry in docs/log.md
+- [x] Engine + tests
+- [x] Trainer (questions / truth / explain)
+- [x] Terminal interface
+- [x] docs/ explainer (`docs/phase-5-poker.md`)
+- [x] Pushed (local-brain check passed)
+- [x] Teaching PDF in local-brain/pdfs/
+- [x] Work-log entry in docs/log.md
+
 ## Phase 6 — Backgammon
 
 - Rules engine: full legal move generation, bar, bearing off, gammons and backgammons.

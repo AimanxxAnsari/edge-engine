@@ -354,3 +354,18 @@ Cards are tracked by rank, with exact deal weights for card removal (Leduc: P(c1
 **[DECISION] D-029: slow tests are opt-in.** `@pytest.mark.slow` tests (the exhaustive 5-card count) are skipped locally unless `--runslow` is given; CI always runs them.
 
 **[DECISION] D-030: Phase 5 is stacked on the Phase 4 branch**, because PR #4 was still open. Its PR is retargeted to `main` once PR #4 is merged.
+
+**[WORK] Phase 5 built.** Package `src/edge_engine/modules/poker/`: `games.py` (Kuhn and Leduc rules, deal weights by rank), `cfr.py` (tree over public histories with per-deal numpy arrays; forward and backward passes, CFR+, best response, exploitability), `evaluator.py` (5-7 card scores), `equity.py` (exact enumeration, Monte Carlo, outs, two-card hit chance), `module.py` (`Poker`: kuhn, leduc and spots modes; equilibrium, station and maniac bots), `lab.py` (`edge-engine lab poker`). Scoring: decision questions accept a tolerance, so EVs within it count as tied. numpy is now a runtime dependency (D-028), and a `slow` marker with `--runslow` is added; CI runs everything (D-029). 260 tests pass in about 10 s, plus the slow exhaustive test (8 s); ruff clean.
+
+The "Done when" checks:
+- **CFR converges.** Kuhn reaches −1/18 within 0.0005 with exploitability under 0.0002, and its strategy falls inside Kuhn's family (K bet = 3α, Q call = α + 1/3, second player's bluff and call 1/3). Leduc: exploitability decreases across checkpoints to under 0.0005, and the value is −0.0856, the published figure. Tree sizes match the literature: 12 and 288 information sets.
+- **The evaluator** gives the known counts for all 2,598,960 five-card hands, the known seven-card frequencies by chi-square, and the same score as the best of 21 subsets for 3,000 random seven-card hands, plus ordering, kicker and two-trips cases.
+- **Equity** from Monte Carlo agrees with exact enumeration within 4 SE on four spots; the two players' shares always sum to 1; from the turn, equity equals outs/44 exactly.
+
+Other checks: the best response equals the best of all 64 pure strategies in Kuhn (against uniform and equilibrium opponents); Leduc rules (legal actions, raise cap, round change, contributions, payoffs); a perfect player is right on every decision in all three modes; over 600 hands, best-response play against the station and maniac bots earns its computed value (+1/3 per hand) within 0.15; the best play differs by bot (never bluff the station, call the maniac with a Q).
+
+*Found while building:*
+- Against the equilibrium bot, mixed actions differ only by CFR's rounding (0.0004 chips), so a correct bluff was marked wrong. Decisions now have a tie tolerance, and the explanation says when actions are indifferent, which is the point of a mixed equilibrium.
+- Two of my test expectations were wrong (a full house that also held a pair of aces; a "maniac" value I wrote into the docs before computing it, +0.42, when it is +1/3); the code was right in both.
+
+*Left for later:* heads-up Hold'em against rule-based bots (D-027), Monte Carlo CFR for bigger games, a 13×13 range grid for range questions, and win-rate variance tools.
