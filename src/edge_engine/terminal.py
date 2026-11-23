@@ -65,6 +65,8 @@ def parse_answer(question: Question, text: str) -> Any:
         matches = [c for c, low in pairs if s and low.startswith(s)]
         if len(matches) == 1:
             return matches[0]
+        if len(question.choices) > 6:
+            raise ParseError(f"choose a number from 1 to {len(question.choices)}, or the moves")
         raise ParseError(f"choose one of: {', '.join(question.choices)}")
     if kind is Kind.INTERVAL:
         parts = [p for p in re.split(r"[\s;@]+|\bto\b", text.strip()) if p]
@@ -109,6 +111,8 @@ def format_truth(question: Question, truth: Any) -> str:
     kind = question.kind
     if kind is Kind.DECISION:
         best = max(truth, key=truth.get)
+        if len(truth) > 6:
+            return f"{best}  (EV {truth[best]:+.4f}, best of {len(truth)})"
         evs = ", ".join(f"{c} {v:+.4f}" for c, v in truth.items())
         return f"{best}  (EV: {evs})"
     if kind is Kind.PROBABILITY:
@@ -156,6 +160,8 @@ class TerminalUI:
         if question.kind is Kind.DECISION:
             keys = {v: k for k, v in question.params.get("keys", {}).items()}
             hint = " / ".join(f"{c} ({keys[c]})" if c in keys else c for c in question.choices)
+            if len(question.choices) > 6:
+                hint = f"a number from 1 to {len(question.choices)}, or the moves"
         if question.params.get("unit") == "percent":
             hint = "a number, in %"
         if question.kind is Kind.INTERVAL and "max_width" in question.params:
