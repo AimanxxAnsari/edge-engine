@@ -104,6 +104,16 @@ Status (23 Nov 2026): **done** (branch `phase-3-blackjack`).
 
 **Done when:** a full round is playable against mixed flow, and the P&L breakdown adds up exactly.
 
+Status (23 Nov 2026): **done** (branch `phase-4-market-making`).
+- [x] Design entry in docs/log.md
+- [x] Engine + tests
+- [x] Trainer (questions / truth / explain)
+- [x] Terminal interface
+- [x] docs/ explainer (`docs/phase-4-market-making.md`)
+- [x] Pushed (local-brain check passed)
+- [x] Teaching PDF in local-brain/pdfs/
+- [x] Work-log entry in docs/log.md
+
 ## Phase 5 — Poker
 
 - Kuhn poker + our own CFR solver (must reach game value −1/18).
@@ -112,6 +122,16 @@ Status (23 Nov 2026): **done** (branch `phase-3-blackjack`).
 - Heads-up Hold'em with rule-based bots; trainer for outs, equity, pot odds and MDF.
 
 **Done when:** CFR converges on Kuhn and Leduc, the evaluator passes exhaustive or known-count tests, and equity agrees with exact enumeration.
+
+Status (23 Nov 2026): **done** (branch `phase-5-poker`), with Hold'em as a spot trainer; full multi-street Hold'em against rule-based bots is deferred (D-027).
+- [x] Design entry in docs/log.md
+- [x] Engine + tests
+- [x] Trainer (questions / truth / explain)
+- [x] Terminal interface
+- [x] docs/ explainer (`docs/phase-5-poker.md`)
+- [x] Pushed (local-brain check passed)
+- [x] Teaching PDF in local-brain/pdfs/
+- [x] Work-log entry in docs/log.md
 
 ## Phase 6 — Backgammon
 

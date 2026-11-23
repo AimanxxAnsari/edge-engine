@@ -101,7 +101,7 @@ def score_answer(question: Question, answer: Any, truth: Any, seconds: float) ->
         return Score(err, pts, ok)
     if kind is Kind.DECISION:
         lost = ev_lost(truth, answer)
-        ok = lost <= EPS
+        ok = lost <= question.tolerance + EPS  # tolerance: EVs this close count as tied
         return Score(lost, 1.0 if ok else 0.0, ok)
     if kind is Kind.PROBABILITY:
         b = brier(float(answer), int(truth))

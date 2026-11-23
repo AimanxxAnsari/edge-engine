@@ -260,3 +260,112 @@ Other checks: the infinite-deck chart differs from the published one only at A2 
 - Two of my test expectations were wrong (95 tens left, not 94; a script that returned only the answer); the code was right.
 
 *Left for later:* exact composition-dependent EVs (drawing without replacement inside the recursion), the 4-hand resplit limit inside the EV, a bankroll curve with risk of ruin, and H17 deviation indices.
+
+---
+
+## 2026-11-23 — Phase 4: Market Making
+
+**[DESIGN] Phase 4 design.**
+
+*The contract.* A hidden quantity that settles at the sum of n items: dice (independent, 1–6) or cards (A = 1 … K = 13, dealt from one deck without replacement). Default: 4 items. The items are revealed one per round. Before each reveal you quote a two-sided market (bid, ask) and bots trade one lot at a time against it. After the last reveal the contract settles at the sum.
+
+*Exact statistics* (`contract.py`, all with `Fraction`):
+
+| | Dice, m hidden | Cards, m hidden from R unseen |
+|---|---|---|
+| Fair value | revealed + 3.5·m | revealed + m·μ, μ = mean of the unseen cards |
+| Variance | m · 35/12 | m·σ²·(R − m)/(R − 1), σ² = population variance of the unseen cards |
+| Distribution | convolution of m dice | dynamic programme over card values: ways to pick m cards with each sum, using C(count, k) per value, over C(R, m) |
+
+The unseen cards include the hidden items, since from the player's view they are a random sample of what is left. (R − m)/(R − 1) is the finite-population correction: drawing without replacement makes the sum vary less.
+
+*Bots* (one lot each; several per round; each is informed with probability α, default 0.3):
+- **Noise trader:** values the contract at fair + U(−sd, sd). Buys at your ask if its value is above it, sells at your bid if below.
+- **Informed trader:** has peeked at the next item to be revealed. Its value G = revealed + peeked + (m − 1)·(mean of the unseen cards without the peeked one). Trades only when your quote is wrong relative to G.
+- At your position limit (default ±5), the side that would push you past it is pulled.
+
+Against noise traders, a half-width h earns h per trade, and the chance of a trade on each side falls as (sd − h)/(2·sd), so very wide markets trade rarely. Informed traders trade exactly when you are wrong, so narrow markets lose to them. The best width is in between and grows with α. The lab measures this by simulation.
+
+*Quote rules.* Bid below ask, and at most 2 standard deviations wide (`-o max_width=` in sds), so you can't avoid trading by quoting an absurd market.
+
+*P&L breakdown (exact).* For trade i with sign s (+1 you bought, −1 you sold), price p, public fair value F at the time, trader's value G (= F for noise traders) and settlement S:
+
+```
+s·(S − p) = s·(F − p)  +  s·(G − F)  +  s·(S − G)
+  P&L         spread     adverse selection   luck
+```
+
+The three parts telescope, so their sums add up to the total P&L exactly, which is the phase's test.
+
+*Questions per round:* fair value (±0.05); standard deviation (±10%); from round 2, your P&L marked at the new fair value (±0.5); the quote (interval: right if fair value is inside your market; the error is an interval score with α = 0.5, so tight markets around fair value score best). Round 1 also asks for the chance the sum reaches a threshold (a binary option, priced exactly from the distribution, ±0.03).
+
+*End of round:* the settlement value, every trade (who, side, price, fair value, the informed trader's view) and the breakdown into spread, adverse selection and luck, including by trader type.
+
+*Lab:* exact statistics for dice and card sums, with and without replacement; simulated P&L per game against quote width and informed share, split into spread income and adverse selection.
+
+**[DECISION] D-024: P&L in exact fractions.** Prices are converted to `Fraction` (a typed 9.3 becomes 93/10), so the breakdown can be tested for exact equality rather than closeness.
+
+**[DECISION] D-025: the quote is scored on fair value and width, not on profit.** Profit in a single game is mostly luck. Being centred on fair value and not too wide is the skill; the breakdown at the end shows how the economics played out.
+
+**[DECISION] D-026: interval answers can have a maximum width** (`params["max_width"]`), checked when typed.
+
+**[WORK] Phase 4 built.** Package `src/edge_engine/modules/market/`: `contract.py` (fair value, variance with the finite-population correction, the exact distribution for dice and cards, the informed trader's value), `bots.py` (noise and informed traders, the position limit, `run_round`, the exact P&L breakdown), `module.py` (`MarketMaking`), `lab.py` (`edge-engine lab market`). Terminal: interval answers with a maximum width and `@` as a separator (D-026). 231 tests (44 new), all passing in under 5 s; ruff clean.
+
+The "Done when" checks:
+- A full game against mixed flow: a scripted player who answers correctly and quotes fair ± sd/2 completes all four rounds with every answer right, and the summary shows the settlement, the trades and the breakdown.
+- The breakdown adds up exactly: over 25 random games (dice and cards, 40% informed, random off-centre quotes), spread + adverse + luck equals the total P&L as fractions, the total equals cash + position × settlement, noise trades have zero adverse selection, and noise + informed totals equal the whole.
+
+Other checks: the distribution, fair value and variance against brute-force enumeration (dice, and cards with some revealed); the three-card variance over all 22,100 hands equals 3·14·49/51; the research notes' figures (10.5 and 8.75 for 3 dice, 7 and 14 for one card, ≈ 40.4 for three cards); the informed value equals the conditional mean; at half-width sd/2 noise traders trade with probability 1/2 (simulated within 4 SE); informed traders never trade against a market containing their value and always trade against one that doesn't; the position limit holds.
+
+*Found while building:* my first informed-trader test said a peeked 6 makes 4 dice worth 17.5; it is 6 + 3·3.5 = 16.5, and the code was right. The lab's first, coarse grid of widths did not show informed traders widening the best market, so I added finer widths before stating it: the best half-width moves from 0.5 sd to about 0.6 sd for both dice and cards.
+
+*Left for later:* several related contracts at once (sum, maximum, product) with consistency checks, Fermi-estimate markets, quotes for more than one lot, and an inventory-aware "fair" quote to score skew against.
+
+---
+
+## 2026-11-23 — Phase 5: Poker
+
+**[DESIGN] Phase 5 design.**
+
+*Games for the solver.*
+- **Kuhn poker:** cards J, Q, K; ante 1; one betting round, bet size 1. Actions: p (check or fold), b (bet or call).
+- **Leduc Hold'em** (Southey et al., 2005): cards J, J, Q, Q, K, K; ante 1; two rounds with bet sizes 2 and 4, at most a bet and a raise per round; one public card after round 1. A pair with the public card wins, else the higher card; equal ranks split. Actions: c (check or call), r (bet or raise), f (fold).
+
+Cards are tracked by rank, with exact deal weights for card removal (Leduc: P(c1) = 1/3, P(c2 | c1) = (2 − [c2 = c1])/5, P(public | c1, c2) = (2 − [p = c1] − [p = c2])/4), giving 6 deals for Kuhn and 27 for Leduc.
+
+*CFR solver* (`cfr.py`). The game tree is built once over public betting histories. Every node holds numpy arrays over all deals: chance weight, both players' reach, the info-set index of the player to act, and the payoff at terminals. One iteration of **CFR+** is a forward pass (reach probabilities under the current strategy), a backward pass (expected values), then regret updates `r(I, a) += Σ over deals in I of (opponent reach × chance) × (v(child a) − v(node))`, clipped at zero. Strategies come from regret matching on the positive regrets. The average strategy is weighted linearly by iteration, which is what makes CFR+ converge fast.
+
+*Checking convergence.* A **best response** pass against a fixed strategy: at each of the responder's info sets, pick the action with the highest counterfactual value summed over the deals in that info set. Exploitability = (BR value of player 1 + BR value of player 2) / 2; it is 0 exactly at a Nash equilibrium. Kuhn must reach the game value −1/18 with near-zero exploitability, and its strategy must fall in Kuhn's one-parameter family (bet J with α, K with 3α, call a bet with Q with α + 1/3). Leduc must reach low exploitability.
+
+*Hand evaluator* (`evaluator.py`). One pass over 5 to 7 cards: rank counts, suit counts, flush and straight checks (including the wheel A-2-3-4-5), giving a score that sorts category first, then the relevant ranks. Seven-card hands are evaluated directly, not as 21 five-card subsets. Checks: all 2,598,960 five-card hands give the known category counts (a slow test, run in CI), seven-card category frequencies against the known counts out of 133,784,560 by sampling, and tie-break cases.
+
+*Equity* (`equity.py`). Exact enumeration of the remaining board for two known hands (990 boards from the flop, 44 from the turn), and Monte Carlo with standard error for preflop or against a random hand. Ties count half.
+
+*Modes.*
+- **kuhn / leduc:** play against a bot. The bot is the CFR equilibrium (default), or an exploitable style (`bot=station` always calls, `bot=maniac` always bets). Each of your decisions is scored against the **best-response value** of each action against that bot's actual strategy, given your card and what you have seen. So the truth is what beats *this* opponent, and against the exploitable bots the best play is not the equilibrium play.
+- **spots:** Hold'em situations with both hands shown (an all-in): outs for the next card, equity to the river (exact), pot odds, call or fold (EV = equity × final pot − call), minimum defence frequency, and the break-even bluff frequency. The explanations compare the rule of 2 and 4 with the exact answer.
+
+*Lab:* CFR convergence for Kuhn and Leduc (exploitability and value against iterations), the Kuhn strategy against theory, seven-card category frequencies, and some equity matchups.
+
+**[DECISION] D-027: Hold'em as a spot trainer this phase; full multi-street play against rule-based bots deferred.** Every scored decision in this project has an exact truth. In a full Hold'em hand against a heuristic bot there isn't one: the best action depends on the bot's whole future strategy and range. Spots where both hands are shown have exact answers, while Kuhn and Leduc give the "play against a bot, scored exactly" experience. A heads-up limit Hold'em game against rule-based bots is recorded as follow-up work.
+
+**[DECISION] D-028: numpy for the solver.** Vectorising each tree node over all deals keeps a CFR iteration on Leduc to a few milliseconds in Python. numpy is now a runtime dependency (D-009 said it would be added when first used).
+
+**[DECISION] D-029: slow tests are opt-in.** `@pytest.mark.slow` tests (the exhaustive 5-card count) are skipped locally unless `--runslow` is given; CI always runs them.
+
+**[DECISION] D-030: Phase 5 is stacked on the Phase 4 branch**, because PR #4 was still open. Its PR is retargeted to `main` once PR #4 is merged.
+
+**[WORK] Phase 5 built.** Package `src/edge_engine/modules/poker/`: `games.py` (Kuhn and Leduc rules, deal weights by rank), `cfr.py` (tree over public histories with per-deal numpy arrays; forward and backward passes, CFR+, best response, exploitability), `evaluator.py` (5-7 card scores), `equity.py` (exact enumeration, Monte Carlo, outs, two-card hit chance), `module.py` (`Poker`: kuhn, leduc and spots modes; equilibrium, station and maniac bots), `lab.py` (`edge-engine lab poker`). Scoring: decision questions accept a tolerance, so EVs within it count as tied. numpy is now a runtime dependency (D-028), and a `slow` marker with `--runslow` is added; CI runs everything (D-029). 260 tests pass in about 10 s, plus the slow exhaustive test (8 s); ruff clean.
+
+The "Done when" checks:
+- **CFR converges.** Kuhn reaches −1/18 within 0.0005 with exploitability under 0.0002, and its strategy falls inside Kuhn's family (K bet = 3α, Q call = α + 1/3, second player's bluff and call 1/3). Leduc: exploitability decreases across checkpoints to under 0.0005, and the value is −0.0856, the published figure. Tree sizes match the literature: 12 and 288 information sets.
+- **The evaluator** gives the known counts for all 2,598,960 five-card hands, the known seven-card frequencies by chi-square, and the same score as the best of 21 subsets for 3,000 random seven-card hands, plus ordering, kicker and two-trips cases.
+- **Equity** from Monte Carlo agrees with exact enumeration within 4 SE on four spots; the two players' shares always sum to 1; from the turn, equity equals outs/44 exactly.
+
+Other checks: the best response equals the best of all 64 pure strategies in Kuhn (against uniform and equilibrium opponents); Leduc rules (legal actions, raise cap, round change, contributions, payoffs); a perfect player is right on every decision in all three modes; over 600 hands, best-response play against the station and maniac bots earns its computed value (+1/3 per hand) within 0.15; the best play differs by bot (never bluff the station, call the maniac with a Q).
+
+*Found while building:*
+- Against the equilibrium bot, mixed actions differ only by CFR's rounding (0.0004 chips), so a correct bluff was marked wrong. Decisions now have a tie tolerance, and the explanation says when actions are indifferent, which is the point of a mixed equilibrium.
+- Two of my test expectations were wrong (a full house that also held a pair of aces; a "maniac" value I wrote into the docs before computing it, +0.42, when it is +1/3); the code was right in both.
+
+*Left for later:* heads-up Hold'em against rule-based bots (D-027), Monte Carlo CFR for bigger games, a 13×13 range grid for range questions, and win-rate variance tools.

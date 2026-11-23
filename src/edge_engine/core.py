@@ -29,7 +29,7 @@ class Question:
     kind: Kind
     prompt: str
     category: str
-    tolerance: float = 0.0  # point / speed: allowed absolute error
+    tolerance: float = 0.0  # point / speed: allowed error; decision: EV gap that counts as a tie
     choices: tuple[str, ...] = ()  # decision
     level: float = 0.9  # interval: nominal coverage
     target_seconds: float | None = None  # speed: full points at or under this time
