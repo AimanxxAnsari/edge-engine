@@ -519,3 +519,13 @@ Checks (fake client): in a scored session the request says the answer is hidden 
 *Not checked here:* a live call to the API. No credentials were available in this environment, so the first real run will be the user's own; the request shape follows the current SDK (2.12) and its documentation.
 
 *Found while building:* adding the assisted flag changed `ask` to return three values, which broke four existing tests that unpacked two; they now unpack three. My first fake client streamed words without their spaces; the tutor code was right.
+
+---
+
+## 2026-11-23 — Documentation: formulas in the README and every explainer
+
+**[WORK] Typeset maths across the docs.** Each game section in the README now carries its key formula. The explainers for phases 0-8 have their formulas written as maths, inline `` $`…`$ `` and display ` ```math ` blocks, both of which GitHub typesets, plus derivations that had only been described in words. Examples: modulo bias and expected tries; the Fisher–Yates product; binomial moments; the Brier minimum; the identities behind each mental-maths technique; the Kelly first- and second-order conditions and the $`c(2-c)`$ parabola; the gambler's-ruin recurrence; the blackjack solver's recursions and split equation; the finite-population correction derived from the covariance; CFR and CFR+ updates and exploitability; counting derivations of all nine five-card categories; the shot-count formula; the TD update; 0x88, Zobrist and alpha-beta; the review formulas. Currency in prose is escaped (`\$`) so it is never read as maths. Every file was rendered with GitHub's own Markdown API to check that the maths is recognised and no price is swallowed. The README's games table lost its phase and status columns, and the Status section was removed at the user's request; a link to the foundations explainer moved to "How it works".
+
+**[DECISION] D-039 (correction): the cost of 6:5 blackjack is 1.35%, not 1.39%.** The exact value is $`0.3 \times \tfrac{8}{169} \times (1 - \tfrac{8}{169}) = 0.01353`$; the explainer and the Phase 3 teaching PDF had used 0.98 instead of 0.953 for P(no dealer blackjack), and the test's tolerance (±0.0005 around 0.0139) was loose enough to pass either. Found while writing the formula out in full. The explainer and PDF are corrected, and the test now checks 0.01353 to ±0.00001. Earlier log entries that quote 1.39% are left as written.
+
+*Checked while writing:* every worked number in the new formulas against the code or a direct calculation (the poker hand counts all reproduce 2,598,960 exactly; the backgammon shot formula gives 11, 12, 14, 15, 15, 17; the evaluation weights and the 6,200 phase constant match the code; the market-judge formula matches `quote_economics`).
